@@ -77,6 +77,17 @@ export const DAY_TAGS = [
   'Lower Body',
   'Core',
   'Full Body',
+  'Chest',
+  'Back',
+  'Shoulders',
+  'Biceps',
+  'Triceps',
+  'Forearms',
+  'Traps',
+  'Quads',
+  'Hamstrings',
+  'Glutes',
+  'Calves',
 ];
 
 // BMI = kg / m²
