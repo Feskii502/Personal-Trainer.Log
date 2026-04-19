@@ -106,11 +106,12 @@ export default function HistoryPanel({ client, exercise }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-      <div className="card p-4" style={{ minHeight: 260 }}>
+      <div className="card p-4">
         <div className="section-title mb-3">
           {timed ? 'Total Duration (s)' : 'Top Weight (kg)'}
         </div>
-        <ResponsiveContainer width="100%" height={240}>
+        <div className="h-[200px] sm:h-[240px]">
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
             <CartesianGrid stroke="#26262A" strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -147,6 +148,7 @@ export default function HistoryPanel({ client, exercise }) {
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="card p-4">

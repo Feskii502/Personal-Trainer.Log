@@ -14,13 +14,13 @@ function DayCard({ day, onOpen }) {
   return (
     <button
       onClick={onOpen}
-      className="card p-4 md:p-5 text-left transition-transform active:scale-[0.97] hover:border-[#333338] flex flex-col gap-3"
-      style={{ minHeight: 150 }}
+      className="card p-3 sm:p-4 md:p-5 text-left transition-transform active:scale-[0.97] hover:border-[#333338] flex flex-col gap-2 sm:gap-3"
+      style={{ minHeight: 130 }}
     >
       <div className="flex items-start justify-between">
         <div>
-          <div className="section-title">Day</div>
-          <div className="font-display text-2xl md:text-3xl font-bold tabular">
+          <div className="section-title text-[10px] sm:text-xs">Day</div>
+          <div className="font-display text-xl sm:text-2xl md:text-3xl font-bold tabular">
             {day.dayNumber}
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-8 pt-6 pb-20">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20">
         <div className="flex items-center justify-between mb-6">
           <button className="btn-icon text-txt-secondary" onClick={onBack}>
             <ArrowLeft size={22} />
@@ -85,7 +85,7 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
         <div className="flex items-end gap-4 flex-wrap mb-8">
           <div>
             <div className="section-title">Week</div>
-            <h1 className="font-display text-4xl md:text-5xl font-bold tabular tracking-tight">
+            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold tabular tracking-tight">
               {week.number}
             </h1>
           </div>

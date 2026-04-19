@@ -91,31 +91,32 @@ export default function HomeScreen({ onOpenClient, onOpenSettings }) {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-8 pt-8 pb-24">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 pt-6 sm:pt-8 pb-24">
         <header className="flex flex-col gap-6 mb-8">
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <div className="section-title mb-1">Coach Workbook</div>
-              <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">
+              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
                 Clients
               </h1>
             </div>
             <div className="flex items-center gap-2">
               <button
-                className="btn-secondary"
+                className="btn-secondary max-sm:px-0 max-sm:w-[52px]"
                 onClick={onOpenSettings}
                 aria-label="Settings"
                 title="Settings"
               >
                 <Settings size={18} />
-                Settings
+                <span className="hidden sm:inline">Settings</span>
               </button>
               <button
-                className="btn-primary"
+                className="btn-primary max-sm:px-0 max-sm:w-[52px]"
                 onClick={() => setOpenNew(true)}
+                aria-label="New Client"
               >
                 <Plus size={20} />
-                New Client
+                <span className="hidden sm:inline">New Client</span>
               </button>
             </div>
           </div>

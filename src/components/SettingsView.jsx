@@ -505,7 +505,7 @@ export default function SettingsView({ onBack, onOpenClient }) {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-8 pt-6 pb-20">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20">
         <div className="flex items-center justify-between mb-6">
           <button className="btn-icon text-txt-secondary" onClick={onBack}>
             <ArrowLeft size={22} />
@@ -514,7 +514,7 @@ export default function SettingsView({ onBack, onOpenClient }) {
           <div style={{ width: 44 }} />
         </div>
 
-        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-6">
+        <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-6">
           Settings
         </h1>
 

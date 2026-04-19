@@ -162,7 +162,7 @@ export default function ProgressTab({ client }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 max-sm:grid-cols-2 md:grid-cols-4 gap-3">
         <div className="card p-4">
           <div className="section-title">Height · fixed</div>
           <div className="font-display text-2xl font-bold tabular mt-1">

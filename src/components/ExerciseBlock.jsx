@@ -102,6 +102,54 @@ function SetRow({
   const remove = () =>
     removeSet(clientId, weekId, dayId, section, exercise.id, set.id);
 
+  const weightInput = weighted ? (
+    <NumInput
+      value={set.weight}
+      placeholder="kg"
+      suffix={exercise.type === '-kg' ? '-kg' : 'kg'}
+      onChange={(v) => patch({ weight: v })}
+    />
+  ) : (
+    <div />
+  );
+
+  const repsInput = timed ? (
+    <NumInput
+      value={set.duration}
+      placeholder="sec"
+      suffix="s"
+      onChange={(v) => patch({ duration: v })}
+    />
+  ) : (
+    <NumInput
+      value={set.reps}
+      placeholder="reps"
+      onChange={(v) => patch({ reps: v })}
+    />
+  );
+
+  const timerBtn = running ? (
+    <button
+      onClick={stop}
+      className="btn-danger btn-sm tabular w-full sm:w-auto"
+      style={{ minWidth: 120 }}
+    >
+      <Square size={14} fill="currentColor" />
+      {fmtSeconds(elapsed)}
+    </button>
+  ) : (
+    <button
+      onClick={start}
+      className="btn-sm tabular border border-brand-lime text-brand-lime bg-transparent w-full sm:w-auto"
+      style={{ minWidth: 120 }}
+    >
+      <Play size={14} fill="currentColor" />
+      {set.completed && set.elapsedSeconds
+        ? fmtSeconds(set.elapsedSeconds)
+        : 'Start'}
+    </button>
+  );
+
   return (
     <div
       className={cx(
@@ -113,8 +161,38 @@ function SetRow({
         border: running ? '1px solid #D4FF3A' : '1px solid #26262A',
       }}
     >
+      {/* Phone: two-row stacked layout. sm+ : original single-row 6-col grid. */}
+      <div className="p-3 sm:hidden space-y-2">
+        <div className="grid items-center gap-2" style={{ gridTemplateColumns: '44px 1fr 1fr' }}>
+          <div className="tabular font-display font-bold text-lg text-txt-secondary">
+            #{set.setNumber}
+          </div>
+          {weightInput}
+          {repsInput}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1">{timerBtn}</div>
+          <button
+            onClick={() =>
+              addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
+            }
+            className="btn-icon text-txt-secondary hover:text-brand-lime"
+            aria-label="Add drop set"
+          >
+            <ChevronDown size={18} />
+          </button>
+          <button
+            onClick={remove}
+            className="btn-icon text-txt-muted hover:text-brand-red"
+            aria-label="Remove set"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+
       <div
-        className="grid items-center gap-2 p-3"
+        className="hidden sm:grid items-center gap-2 p-3"
         style={{
           gridTemplateColumns:
             'minmax(44px,56px) minmax(90px,1fr) minmax(90px,1fr) minmax(160px,auto) auto auto',
@@ -123,55 +201,10 @@ function SetRow({
         <div className="tabular font-display font-bold text-lg text-txt-secondary pl-2">
           #{set.setNumber}
         </div>
-
-        {weighted ? (
-          <NumInput
-            value={set.weight}
-            placeholder="kg"
-            suffix={exercise.type === '-kg' ? '-kg' : 'kg'}
-            onChange={(v) => patch({ weight: v })}
-          />
-        ) : (
-          <div />
-        )}
-
-        {timed ? (
-          <NumInput
-            value={set.duration}
-            placeholder="sec"
-            suffix="s"
-            onChange={(v) => patch({ duration: v })}
-          />
-        ) : (
-          <NumInput
-            value={set.reps}
-            placeholder="reps"
-            onChange={(v) => patch({ reps: v })}
-          />
-        )}
-
+        {weightInput}
+        {repsInput}
         <div className="flex items-center gap-2">
-          {running ? (
-            <button
-              onClick={stop}
-              className="btn-danger btn-sm tabular"
-              style={{ minWidth: 120 }}
-            >
-              <Square size={14} fill="currentColor" />
-              {fmtSeconds(elapsed)}
-            </button>
-          ) : (
-            <button
-              onClick={start}
-              className="btn-sm tabular border border-brand-lime text-brand-lime bg-transparent"
-              style={{ minWidth: 120 }}
-            >
-              <Play size={14} fill="currentColor" />
-              {set.completed && set.elapsedSeconds
-                ? fmtSeconds(set.elapsedSeconds)
-                : 'Start'}
-            </button>
-          )}
+          {timerBtn}
           <button
             onClick={() =>
               addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
@@ -183,7 +216,6 @@ function SetRow({
             <ChevronDown size={18} />
           </button>
         </div>
-
         <div />
         <button
           onClick={remove}
@@ -195,13 +227,13 @@ function SetRow({
       </div>
 
       {set.dropSets?.length > 0 && (
-        <div className="px-3 pb-3 pl-10 space-y-2">
+        <div className="px-3 pb-3 sm:pl-10 space-y-2">
           {set.dropSets.map((ds) => (
             <div
               key={ds.id}
               className="grid items-center gap-2"
               style={{
-                gridTemplateColumns: 'auto minmax(90px,1fr) minmax(90px,1fr) auto',
+                gridTemplateColumns: 'auto minmax(0,1fr) minmax(0,1fr) auto',
               }}
             >
               <span className="text-[10px] uppercase tracking-wider font-semibold text-txt-muted">

@@ -137,7 +137,7 @@ export default function DayView({ clientId, weekId, dayId, onBack }) {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-8 pt-6 pb-20">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20">
         <div className="flex items-center justify-between mb-6">
           <button className="btn-icon text-txt-secondary" onClick={onBack}>
             <ArrowLeft size={22} />
@@ -155,7 +155,7 @@ export default function DayView({ clientId, weekId, dayId, onBack }) {
             <div className="section-title">
               Day {day.dayNumber} · {DAY_NAMES[day.dayNumber - 1]}
             </div>
-            <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
               {sectionLabel}
             </h1>
           </div>
@@ -198,9 +198,10 @@ export default function DayView({ clientId, weekId, dayId, onBack }) {
                           : 'text-txt-secondary'
                       )}
                       style={{ minHeight: 48 }}
+                      aria-label={s.label}
                     >
                       <Icon size={16} />
-                      {s.label}
+                      <span className="hidden sm:inline">{s.label}</span>
                       <span className="tabular text-[10px] text-txt-muted ml-1">
                         {day.sections[s.key].length}
                       </span>
