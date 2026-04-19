@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    font-family: Inter, 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  input,
+  textarea,
+  button,
+  select {
+    font: inherit;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-btn font-semibold select-none transition-transform duration-150 ease-out active:scale-[0.97];
+    touch-action: manipulation;
+  }
+  .btn-primary {
+    @apply btn bg-brand-lime text-black hover:bg-brand-lime;
+    min-height: 52px;
+    padding: 0 20px;
+  }
+  .btn-secondary {
+    @apply btn bg-transparent text-txt-primary border border-border;
+    min-height: 52px;
+    padding: 0 20px;
+  }
+  .btn-danger {
+    @apply btn bg-brand-red text-white;
+    min-height: 52px;
+    padding: 0 20px;
+  }
+  .btn-sm {
+    min-height: 40px;
+    padding: 0 14px;
+    @apply text-sm font-semibold rounded-btn;
+  }
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-btn transition-transform active:scale-[0.95];
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .input {
+    @apply w-full rounded-btn bg-bg-elevated text-txt-primary placeholder:text-txt-muted border border-transparent focus:border-brand-lime focus:outline-none transition-colors;
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+  .input-num {
+    @apply input tabular text-center font-semibold;
+    font-size: 20px;
+  }
+  .card {
+    @apply bg-bg-surface border border-border rounded-card;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-pill px-3.5 uppercase tracking-wide text-xs font-semibold border border-border;
+    min-height: 36px;
+  }
+  .chip-active {
+    @apply bg-brand-lime text-black border-brand-lime;
+  }
+  .section-title {
+    @apply font-display uppercase tracking-wide text-txt-secondary text-xs font-semibold;
+  }
+  .divider {
+    @apply h-px bg-border w-full;
+  }
+  .modal-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
