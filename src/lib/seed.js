@@ -203,7 +203,7 @@ export const makeSeed = () => {
   };
 
   const seededWeek2 = emptyWeek(1, 'Strength');
-  seededWeek2.days[0].tags = ['Legs', 'Lower Back'];
+  seededWeek2.days[0].tags = ['Legs', 'Lower Body'];
   seededWeek2.days[3].tags = ['Full Body'];
 
   const client2 = {

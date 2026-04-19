@@ -44,7 +44,7 @@ export const PHASES = [
 export const phaseColor = (p) =>
   PHASES.find((x) => x.key === p)?.color || '#8A8A90';
 
-export const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const MUSCLE_GROUPS = [
   'Chest',
@@ -73,8 +73,8 @@ export const DAY_TAGS = [
   'Push',
   'Pull',
   'Legs',
-  'Upper Back',
-  'Lower Back',
+  'Upper Body',
+  'Lower Body',
   'Core',
   'Full Body',
 ];

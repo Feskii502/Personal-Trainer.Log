@@ -98,12 +98,12 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
             <DayCard key={d.id} day={d} onOpen={() => onOpenDay(d.id)} />
           ))}
         </div>
-        <div className="grid lg:hidden grid-cols-4 gap-3">
+        <div className="grid lg:hidden grid-cols-4 max-sm:grid-cols-1 gap-3">
           {week.days.slice(0, 4).map((d) => (
             <DayCard key={d.id} day={d} onOpen={() => onOpenDay(d.id)} />
           ))}
         </div>
-        <div className="grid lg:hidden grid-cols-3 gap-3 mt-3">
+        <div className="grid lg:hidden grid-cols-3 max-sm:grid-cols-1 gap-3 mt-3">
           {week.days.slice(4).map((d) => (
             <DayCard key={d.id} day={d} onOpen={() => onOpenDay(d.id)} />
           ))}
