@@ -1,4 +1,4 @@
-import { WEEK_TAGS, cx } from '../../lib/utils.js';
+import { DAY_TAGS, cx } from '../../lib/utils.js';
 
 export default function TagEditor({ value = [], onChange, compact = false }) {
   const toggle = (t) =>
@@ -6,7 +6,7 @@ export default function TagEditor({ value = [], onChange, compact = false }) {
 
   return (
     <div className={cx('flex flex-wrap', compact ? 'gap-1.5' : 'gap-2')}>
-      {WEEK_TAGS.map((t) => {
+      {DAY_TAGS.map((t) => {
         const active = value.includes(t);
         return (
           <button

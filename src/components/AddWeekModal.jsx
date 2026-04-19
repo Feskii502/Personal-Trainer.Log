@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import Modal from './ui/Modal.jsx';
-import { PHASES, WEEK_TAGS, cx } from '../lib/utils.js';
+import { PHASES } from '../lib/utils.js';
 import { addWeek } from '../lib/store.js';
 
 export default function AddWeekModal({ open, onClose, clientId, onCreated }) {
   const [phase, setPhase] = useState(null);
-  const [tags, setTags] = useState([]);
-
-  const toggle = (t) =>
-    setTags((a) => (a.includes(t) ? a.filter((x) => x !== t) : [...a, t]));
 
   const submit = () => {
     if (!phase) return;
-    const id = addWeek(clientId, phase, tags);
+    const id = addWeek(clientId, phase);
     setPhase(null);
-    setTags([]);
     onCreated?.(id);
     onClose?.();
   };
@@ -40,7 +35,7 @@ export default function AddWeekModal({ open, onClose, clientId, onCreated }) {
       }
     >
       <div className="section-title mb-3">Training Phase</div>
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4">
         {PHASES.map((p) => {
           const active = phase === p.key;
           return (
@@ -75,21 +70,8 @@ export default function AddWeekModal({ open, onClose, clientId, onCreated }) {
           );
         })}
       </div>
-
-      <div className="section-title mb-3">Tags · select any that apply</div>
-      <div className="flex flex-wrap gap-2">
-        {WEEK_TAGS.map((t) => {
-          const active = tags.includes(t);
-          return (
-            <button
-              key={t}
-              onClick={() => toggle(t)}
-              className={cx('chip', active && 'chip-active')}
-            >
-              {t}
-            </button>
-          );
-        })}
+      <div className="text-xs text-txt-muted mt-4">
+        Tags are per day — set them when you open each day in the week.
       </div>
     </Modal>
   );

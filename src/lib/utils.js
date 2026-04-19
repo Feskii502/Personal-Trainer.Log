@@ -69,7 +69,7 @@ export const isTimed = (t) => t === 'timed' || t === 'timed+kg';
 export const hasWeight = (t) =>
   t === '+kg' || t === '-kg' || t === 'timed+kg';
 
-export const WEEK_TAGS = [
+export const DAY_TAGS = [
   'Push',
   'Pull',
   'Legs',

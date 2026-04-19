@@ -10,6 +10,7 @@ const daysFromNow = (n) => {
 const emptyDay = (n) => ({
   id: uid(),
   dayNumber: n,
+  tags: [],
   sections: { warmUp: [], resistance: [], coolDown: [] },
 });
 
@@ -176,8 +177,10 @@ export const makeSeed = () => {
 
   client1Weeks.push(w1);
 
-  // Attach a couple of tags to the seeded week
-  client1Weeks[0].tags = ['Push', 'Pull', 'Full Body'];
+  // Tag the seeded Monday (push + core) and leave other days untagged for demo.
+  monday.tags = ['Push', 'Core'];
+  w1.days[1].tags = ['Pull'];
+  w1.days[2].tags = ['Legs', 'Core'];
 
   const client1 = {
     id: uid(),
@@ -200,7 +203,8 @@ export const makeSeed = () => {
   };
 
   const seededWeek2 = emptyWeek(1, 'Strength');
-  seededWeek2.tags = ['Legs', 'Lower Back'];
+  seededWeek2.days[0].tags = ['Legs', 'Lower Back'];
+  seededWeek2.days[3].tags = ['Full Body'];
 
   const client2 = {
     id: uid(),

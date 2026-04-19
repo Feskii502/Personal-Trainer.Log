@@ -1,7 +1,7 @@
 import { DEFAULT_LIBRARY } from './exerciseLibrary.js';
 import { makeSeed } from './seed.js';
 
-const KEY = 'coach-workbook:v2';
+const KEY = 'coach-workbook:v3';
 
 const empty = () => ({
   clients: [],

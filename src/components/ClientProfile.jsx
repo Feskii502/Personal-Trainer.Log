@@ -13,7 +13,6 @@ import { useStore, updateClient, deleteClient, deleteWeek } from '../lib/store.j
 import { daysUntil, fmtDate, initialsOf, cx } from '../lib/utils.js';
 import AddWeekModal from './AddWeekModal.jsx';
 import PhaseBadge from './ui/PhaseBadge.jsx';
-import { TagList } from './ui/TagEditor.jsx';
 import ProgressTab from './ProgressTab.jsx';
 
 const TABS = [
@@ -144,7 +143,6 @@ function WeeksTab({ client, onOpenWeek }) {
               <div className="text-sm text-txt-secondary tabular">
                 {totalExercises} exercise{totalExercises === 1 ? '' : 's'} logged
               </div>
-              <TagList tags={w.tags || []} />
             </button>
           );
         })}

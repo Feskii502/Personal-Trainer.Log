@@ -1,8 +1,8 @@
 import { ArrowLeft, Trash2 } from 'lucide-react';
-import { useStore, deleteWeek, updateWeek } from '../lib/store.js';
+import { useStore, deleteWeek } from '../lib/store.js';
 import { DAY_NAMES } from '../lib/utils.js';
 import PhaseBadge from './ui/PhaseBadge.jsx';
-import TagEditor from './ui/TagEditor.jsx';
+import { TagList } from './ui/TagEditor.jsx';
 
 function DayCard({ day, onOpen }) {
   const total =
@@ -34,6 +34,7 @@ function DayCard({ day, onOpen }) {
       <div className="section-title text-txt-secondary">
         {DAY_NAMES[day.dayNumber - 1]}
       </div>
+      {day.tags?.length > 0 && <TagList tags={day.tags} />}
       <div className="text-xs text-txt-secondary tabular mt-auto">
         {hasContent ? `${total} exercises` : 'Empty'}
       </div>
@@ -81,7 +82,7 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
           </button>
         </div>
 
-        <div className="flex items-end gap-4 flex-wrap mb-6">
+        <div className="flex items-end gap-4 flex-wrap mb-8">
           <div>
             <div className="section-title">Week</div>
             <h1 className="font-display text-4xl md:text-5xl font-bold tabular tracking-tight">
@@ -89,14 +90,6 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
             </h1>
           </div>
           <PhaseBadge phase={week.phase} />
-        </div>
-
-        <div className="card p-4 mb-8">
-          <div className="section-title mb-3">Tags</div>
-          <TagEditor
-            value={week.tags || []}
-            onChange={(tags) => updateWeek(clientId, weekId, { tags })}
-          />
         </div>
 
         {/* Landscape / large: 7 columns. Portrait: 4 + 3. */}

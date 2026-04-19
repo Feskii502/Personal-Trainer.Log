@@ -59,10 +59,11 @@ export const deleteClient = (id) => {
 const makeDay = (n) => ({
   id: uid(),
   dayNumber: n,
+  tags: [],
   sections: { warmUp: [], resistance: [], coolDown: [] },
 });
 
-export const addWeek = (clientId, phase, tags = []) => {
+export const addWeek = (clientId, phase) => {
   let newId;
   update((s) => ({
     ...s,
@@ -73,7 +74,6 @@ export const addWeek = (clientId, phase, tags = []) => {
         id: uid(),
         number,
         phase,
-        tags,
         days: Array.from({ length: 7 }, (_, i) => makeDay(i + 1)),
       };
       newId = week.id;
@@ -81,6 +81,12 @@ export const addWeek = (clientId, phase, tags = []) => {
     }),
   }));
   return newId;
+};
+
+export const updateDay = (clientId, weekId, dayId, patch) => {
+  update((s) =>
+    mapDay(s, clientId, weekId, dayId, (d) => ({ ...d, ...patch }))
+  );
 };
 
 export const updateWeek = (clientId, weekId, patch) => {

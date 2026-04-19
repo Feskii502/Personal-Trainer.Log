@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Plus, Flame, Dumbbell, Snowflake } from 'lucide-react';
-import { useStore } from '../lib/store.js';
+import { useStore, updateDay } from '../lib/store.js';
 import { DAY_NAMES, cx } from '../lib/utils.js';
 import PhaseBadge from './ui/PhaseBadge.jsx';
+import TagEditor from './ui/TagEditor.jsx';
 import AddExerciseModal from './AddExerciseModal.jsx';
 import ExerciseBlock from './ExerciseBlock.jsx';
 import BetweenExerciseRest from './BetweenExerciseRest.jsx';
@@ -149,7 +150,7 @@ export default function DayView({ clientId, weekId, dayId, onBack }) {
           <div style={{ width: 44 }} />
         </div>
 
-        <div className="flex items-end gap-4 flex-wrap mb-6">
+        <div className="flex items-end gap-4 flex-wrap mb-5">
           <div>
             <div className="section-title">
               Day {day.dayNumber} · {DAY_NAMES[day.dayNumber - 1]}
@@ -159,6 +160,14 @@ export default function DayView({ clientId, weekId, dayId, onBack }) {
             </h1>
           </div>
           <PhaseBadge phase={week.phase} />
+        </div>
+
+        <div className="card p-4 mb-6">
+          <div className="section-title mb-3">Day Tags · select any that apply</div>
+          <TagEditor
+            value={day.tags || []}
+            onChange={(tags) => updateDay(clientId, weekId, dayId, { tags })}
+          />
         </div>
 
         {/* Landscape split-pane */}
