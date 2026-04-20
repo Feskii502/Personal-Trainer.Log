@@ -9,6 +9,7 @@ import {
   X,
   Users,
   Dumbbell,
+  LogOut,
 } from 'lucide-react';
 import {
   useStore,
@@ -18,6 +19,7 @@ import {
   updateClient,
   deleteClient,
 } from '../lib/store.js';
+import { supabase } from '../lib/supabase.js';
 import {
   MUSCLE_GROUPS,
   EXERCISE_TYPES,
@@ -545,6 +547,15 @@ export default function SettingsView({ onBack, onOpenClient }) {
 
         {tab === 'exercises' && <ExercisesTab />}
         {tab === 'clients' && <ClientsTab onOpenClient={onOpenClient} />}
+
+        <div className="mt-10 pt-6 border-t border-border">
+          <button
+            className="btn-secondary"
+            onClick={() => supabase.auth.signOut()}
+          >
+            <LogOut size={18} /> Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

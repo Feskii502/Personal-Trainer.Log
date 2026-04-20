@@ -1,16 +1,45 @@
 import { useEffect, useState } from 'react';
-import { loadState, saveState } from './storage.js';
+import { emptyState, fetchState, persistState } from './storage.js';
 import { uid } from './utils.js';
 
-let state = loadState();
+let state = emptyState();
+let loaded = false;
 const listeners = new Set();
 
+let saveTimer = null;
+const scheduleSave = () => {
+  if (!loaded) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    persistState(state);
+  }, 500);
+};
+
 const emit = () => {
-  saveState(state);
+  scheduleSave();
   listeners.forEach((l) => l(state));
 };
 
 export const getState = () => state;
+
+export const initStore = async () => {
+  loaded = false;
+  const next = await fetchState();
+  state = next;
+  loaded = true;
+  listeners.forEach((l) => l(state));
+  return state;
+};
+
+export const resetStore = () => {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  loaded = false;
+  state = emptyState();
+  listeners.forEach((l) => l(state));
+};
 
 export const useStore = () => {
   const [s, setS] = useState(state);

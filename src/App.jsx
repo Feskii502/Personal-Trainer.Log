@@ -1,13 +1,47 @@
 import { useEffect, useState } from 'react';
+import { supabase } from './lib/supabase.js';
+import { initStore, resetStore } from './lib/store.js';
 import HomeScreen from './components/HomeScreen.jsx';
 import ClientProfile from './components/ClientProfile.jsx';
 import WeekView from './components/WeekView.jsx';
 import DayView from './components/DayView.jsx';
 import SettingsView from './components/SettingsView.jsx';
+import AuthView from './components/AuthView.jsx';
 
-// View stack: 'home' | 'client' | 'week' | 'day'
+// View stack: 'home' | 'client' | 'week' | 'day' | 'settings'
 export default function App() {
   const [view, setView] = useState({ name: 'home' });
+  const [session, setSession] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [storeReady, setStoreReady] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setAuthChecked(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (session) {
+      setStoreReady(false);
+      initStore().then(() => {
+        if (!cancelled) setStoreReady(true);
+      });
+    } else {
+      resetStore();
+      setStoreReady(false);
+      setView({ name: 'home' });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
 
   // Reflow on orientation change — some Safari/iPad viewports need a nudge.
   useEffect(() => {
@@ -36,6 +70,30 @@ export default function App() {
       weekId: view.weekId,
       dayId,
     });
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-bg-base text-txt-secondary flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-full bg-bg-base text-txt-primary">
+        <AuthView />
+      </div>
+    );
+  }
+
+  if (!storeReady) {
+    return (
+      <div className="min-h-screen bg-bg-base text-txt-secondary flex items-center justify-center">
+        Loading your data...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-bg-base text-txt-primary">
