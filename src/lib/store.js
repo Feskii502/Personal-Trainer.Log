@@ -4,15 +4,41 @@ import { uid } from './utils.js';
 
 let state = emptyState();
 let loaded = false;
+let pendingSave = false;
 const listeners = new Set();
 
 let saveTimer = null;
 const scheduleSave = () => {
   if (!loaded) return;
+  pendingSave = true;
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    saveTimer = null;
+    pendingSave = false;
     persistState(state);
-  }, 500);
+  }, 400);
+};
+
+export const flushSave = () => {
+  if (!loaded || !pendingSave) return;
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  pendingSave = false;
+  persistState(state);
+};
+
+export const applyRemoteState = (next) => {
+  if (!loaded) return;
+  if (pendingSave) return; // our local edits haven't flushed; ignore echo
+  try {
+    if (JSON.stringify(next) === JSON.stringify(state)) return;
+  } catch {
+    /* fall through and apply */
+  }
+  state = next;
+  listeners.forEach((l) => l(state));
 };
 
 const emit = () => {
@@ -37,9 +63,19 @@ export const resetStore = () => {
     saveTimer = null;
   }
   loaded = false;
+  pendingSave = false;
   state = emptyState();
   listeners.forEach((l) => l(state));
 };
+
+if (typeof window !== 'undefined') {
+  const flushIfHidden = () => {
+    if (document.visibilityState === 'hidden') flushSave();
+  };
+  window.addEventListener('beforeunload', flushSave);
+  window.addEventListener('pagehide', flushSave);
+  document.addEventListener('visibilitychange', flushIfHidden);
+}
 
 export const useStore = () => {
   const [s, setS] = useState(state);

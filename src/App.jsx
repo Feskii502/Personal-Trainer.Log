@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase.js';
-import { initStore, resetStore } from './lib/store.js';
+import { initStore, resetStore, applyRemoteState } from './lib/store.js';
+import { subscribeToUserState } from './lib/storage.js';
 import HomeScreen from './components/HomeScreen.jsx';
 import ClientProfile from './components/ClientProfile.jsx';
 import WeekView from './components/WeekView.jsx';
@@ -28,10 +29,13 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe = null;
     if (session) {
       setStoreReady(false);
       initStore().then(() => {
-        if (!cancelled) setStoreReady(true);
+        if (cancelled) return;
+        setStoreReady(true);
+        unsubscribe = subscribeToUserState(session.user.id, applyRemoteState);
       });
     } else {
       resetStore();
@@ -40,6 +44,7 @@ export default function App() {
     }
     return () => {
       cancelled = true;
+      if (unsubscribe) unsubscribe();
     };
   }, [session?.user?.id]);
 

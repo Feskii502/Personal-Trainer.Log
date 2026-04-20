@@ -32,3 +32,15 @@ create policy "users update own state"
 create policy "users delete own state"
   on public.user_state for delete
   using (auth.uid() = user_id);
+
+-- Enable realtime so other tabs/devices receive updates instantly.
+-- Safe to run even if already added.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'user_state'
+  ) then
+    alter publication supabase_realtime add table public.user_state;
+  end if;
+end $$;

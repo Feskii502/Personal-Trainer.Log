@@ -52,3 +52,27 @@ export const persistState = async (state) => {
     );
   if (error) console.error('persistState error:', error);
 };
+
+// Subscribe to remote changes for this user's row. Invokes onChange with the
+// normalized state whenever another tab/device writes. Returns unsubscribe fn.
+export const subscribeToUserState = (userId, onChange) => {
+  const channel = supabase
+    .channel(`user_state:${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_state',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const incoming = payload.new?.data;
+        if (incoming) onChange(normalize(incoming));
+      }
+    )
+    .subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
