@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { emptyState, fetchState, persistState } from './storage.js';
+import {
+  emptyState,
+  fetchState,
+  persistState,
+  resetLastSaved,
+} from './storage.js';
 import { uid } from './utils.js';
 
 let state = emptyState();
@@ -65,6 +70,7 @@ export const resetStore = () => {
   loaded = false;
   pendingSave = false;
   state = emptyState();
+  resetLastSaved();
   listeners.forEach((l) => l(state));
 };
 
