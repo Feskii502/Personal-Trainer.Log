@@ -1,42 +1,98 @@
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
+import { ArrowLeft, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import { useStore, deleteWeek } from '../lib/store.js';
-import { DAY_NAMES } from '../lib/utils.js';
-import PhaseBadge from './ui/PhaseBadge.jsx';
+import {
+  DAY_NAMES,
+  cx,
+  initialsOf,
+  phaseColor,
+} from '../lib/utils.js';
 import { TagList } from './ui/TagEditor.jsx';
 
-function DayCard({ day, onOpen }) {
-  const total =
+function dayStats(day) {
+  let total = 0;
+  let done = 0;
+  for (const k of ['warmUp', 'resistance', 'coolDown']) {
+    for (const ex of day.sections[k]) {
+      for (const s of ex.sets) {
+        total++;
+        if (s.completed) done++;
+      }
+    }
+  }
+  return { total, done };
+}
+
+function DayCard({ day, onOpen, phaseHex }) {
+  const exCount =
     day.sections.warmUp.length +
     day.sections.resistance.length +
     day.sections.coolDown.length;
-  const hasContent = total > 0;
+  const hasContent = exCount > 0;
+  const { total, done } = dayStats(day);
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const complete = total > 0 && done >= total;
 
   return (
     <button
       onClick={onOpen}
-      className="card p-3 sm:p-4 md:p-5 text-left transition-transform active:scale-[0.97] hover:border-[#333338] flex flex-col gap-2 sm:gap-3"
-      style={{ minHeight: 130 }}
+      className="card text-left transition-all active:scale-[0.98] hover:border-[#3a3a40] flex flex-col p-4 sm:p-5 relative overflow-hidden"
+      style={{ minHeight: 156 }}
     >
-      <div className="flex items-start justify-between">
+      {hasContent && (
+        <div
+          className="absolute top-0 left-0 right-0"
+          style={{ height: 2, background: complete ? '#3ADBC7' : phaseHex }}
+        />
+      )}
+      <div className="flex items-start justify-between mb-2">
         <div>
-          <div className="section-title text-[10px] sm:text-xs">Day</div>
-          <div className="font-display text-xl sm:text-2xl md:text-3xl font-bold tabular">
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-txt-muted">
+            {DAY_NAMES[day.dayNumber - 1]}
+          </div>
+          <div className="font-display tabular font-bold text-3xl leading-none mt-0.5">
             {day.dayNumber}
           </div>
         </div>
+        {hasContent ? (
+          complete ? (
+            <CheckCircle2 size={18} className="text-[#3ADBC7]" />
+          ) : (
+            <Circle size={18} className="text-txt-muted" />
+          )
+        ) : null}
+      </div>
+
+      {day.tags?.length > 0 && (
+        <div className="mb-2">
+          <TagList tags={day.tags} />
+        </div>
+      )}
+
+      <div className="mt-auto">
+        <div className="text-[11px] tabular text-txt-secondary mb-1.5">
+          {hasContent ? (
+            <>
+              {exCount} exercise{exCount === 1 ? '' : 's'} · {done}/{total} sets
+            </>
+          ) : (
+            'Empty'
+          )}
+        </div>
         {hasContent && (
           <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ background: '#D4FF3A' }}
-          />
+            className="h-1 rounded-full overflow-hidden"
+            style={{ background: '#1C1C1F' }}
+          >
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: pct + '%',
+                background: complete ? '#3ADBC7' : phaseHex,
+              }}
+            />
+          </div>
         )}
-      </div>
-      <div className="section-title text-txt-secondary">
-        {DAY_NAMES[day.dayNumber - 1]}
-      </div>
-      {day.tags?.length > 0 && <TagList tags={day.tags} />}
-      <div className="text-xs text-txt-secondary tabular mt-auto">
-        {hasContent ? `${total} exercises` : 'Empty'}
       </div>
     </button>
   );
@@ -46,6 +102,26 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
   const { clients } = useStore();
   const client = clients.find((c) => c.id === clientId);
   const week = client?.weeks.find((w) => w.id === weekId);
+
+  const stats = useMemo(() => {
+    if (!week) return null;
+    let totalEx = 0;
+    let totalSets = 0;
+    let doneSets = 0;
+    let activeDays = 0;
+    for (const d of week.days) {
+      const ds = dayStats(d);
+      totalSets += ds.total;
+      doneSets += ds.done;
+      const ex =
+        d.sections.warmUp.length +
+        d.sections.resistance.length +
+        d.sections.coolDown.length;
+      totalEx += ex;
+      if (ex > 0) activeDays++;
+    }
+    return { totalEx, totalSets, doneSets, activeDays };
+  }, [week]);
 
   if (!week) {
     return (
@@ -58,18 +134,26 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
     );
   }
 
+  const phaseHex = phaseColor(week.phase);
+  const pct =
+    stats.totalSets > 0
+      ? Math.round((stats.doneSets / stats.totalSets) * 100)
+      : 0;
+
   return (
     <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20">
-        <div className="flex items-center justify-between mb-6">
-          <button className="btn-icon text-txt-secondary" onClick={onBack}>
-            <ArrowLeft size={22} />
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="section-title">{client.name}</div>
-          </div>
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20 space-y-5">
+        <div className="flex items-center justify-between">
           <button
-            className="btn-icon text-txt-secondary hover:text-brand-red"
+            onClick={onBack}
+            className="btn-icon text-txt-secondary hover:text-txt-primary"
+            aria-label="Back"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div className="section-title">{client.name}</div>
+          <button
+            className="btn-icon text-txt-muted hover:text-brand-red"
             onClick={() => {
               if (confirm(`Delete week ${week.number}?`)) {
                 deleteWeek(clientId, weekId);
@@ -78,34 +162,120 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
             }}
             aria-label="Delete week"
           >
-            <Trash2 size={20} />
+            <Trash2 size={18} />
           </button>
         </div>
 
-        <div className="flex items-end gap-4 flex-wrap mb-8">
-          <div>
-            <div className="section-title">Week</div>
-            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold tabular tracking-tight">
-              {week.number}
-            </h1>
+        {/* Week header card */}
+        <div className="card p-5 sm:p-6 relative overflow-hidden">
+          <div
+            className="absolute top-0 left-0 right-0"
+            style={{ height: 3, background: phaseHex }}
+          />
+          <div className="flex items-start gap-4 flex-wrap">
+            <div
+              className="rounded-full flex items-center justify-center font-display font-bold text-sm flex-shrink-0 relative"
+              style={{
+                width: 48,
+                height: 48,
+                background: '#1C1C1F',
+                color: '#D4FF3A',
+                border: '1px solid #26262A',
+              }}
+            >
+              {initialsOf(client.name) || '·'}
+              <span
+                className="absolute -bottom-0.5 -right-0.5 rounded-full"
+                style={{
+                  width: 14,
+                  height: 14,
+                  background: phaseHex,
+                  border: '2px solid #141416',
+                }}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="section-title">Week</div>
+              <div className="flex items-center gap-3 flex-wrap mt-0.5">
+                <h1 className="font-display text-3xl sm:text-4xl font-bold tabular tracking-tight leading-none">
+                  {week.number}
+                </h1>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block rounded-full"
+                    style={{ width: 10, height: 10, background: phaseHex }}
+                  />
+                  <span className="text-sm uppercase tracking-wide font-semibold">
+                    {week.phase}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-[10px] uppercase tracking-wider text-txt-muted">
+                Progress
+              </div>
+              <div
+                className="font-display tabular font-bold text-2xl mt-0.5"
+                style={{ color: pct === 100 ? phaseHex : '#F5F5F7' }}
+              >
+                {pct}%
+              </div>
+            </div>
           </div>
-          <PhaseBadge phase={week.phase} />
+
+          <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-border">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-txt-muted">
+                Active days
+              </div>
+              <div className="font-display tabular font-bold text-xl mt-0.5">
+                {stats.activeDays}
+                <span className="text-txt-muted text-sm">/7</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-txt-muted">
+                Exercises
+              </div>
+              <div className="font-display tabular font-bold text-xl mt-0.5">
+                {stats.totalEx}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-txt-muted">
+                Sets
+              </div>
+              <div className="font-display tabular font-bold text-xl mt-0.5">
+                {stats.doneSets}
+                <span className="text-txt-muted text-sm">/{stats.totalSets}</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="h-1.5 rounded-full overflow-hidden mt-4"
+            style={{ background: '#1C1C1F' }}
+          >
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: pct + '%',
+                background: pct === 100 ? '#3ADBC7' : phaseHex,
+              }}
+            />
+          </div>
         </div>
 
-        {/* Landscape / large: 7 columns. Portrait: 4 + 3. */}
-        <div className="hidden lg:grid grid-cols-7 gap-4">
+        {/* Days grid: 7 cols on lg, 1 column on phone, 2/4 in between */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
           {week.days.map((d) => (
-            <DayCard key={d.id} day={d} onOpen={() => onOpenDay(d.id)} />
-          ))}
-        </div>
-        <div className="grid lg:hidden grid-cols-4 max-sm:grid-cols-1 gap-3">
-          {week.days.slice(0, 4).map((d) => (
-            <DayCard key={d.id} day={d} onOpen={() => onOpenDay(d.id)} />
-          ))}
-        </div>
-        <div className="grid lg:hidden grid-cols-3 max-sm:grid-cols-1 gap-3 mt-3">
-          {week.days.slice(4).map((d) => (
-            <DayCard key={d.id} day={d} onOpen={() => onOpenDay(d.id)} />
+            <DayCard
+              key={d.id}
+              day={d}
+              onOpen={() => onOpenDay(d.id)}
+              phaseHex={phaseHex}
+            />
           ))}
         </div>
       </div>

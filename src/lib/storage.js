@@ -159,6 +159,72 @@ export const persistState = async (state) => {
   };
 };
 
+// ---------- Sessions (scheduled appointments) ----------
+
+const sessionRowToObj = (row) => ({
+  id: row.id,
+  clientId: row.client_id,
+  scheduledAt: row.scheduled_at,
+  durationMinutes: row.duration_minutes,
+  status: row.status,
+  notes: row.notes || '',
+});
+
+export const fetchSessions = async (rangeStart, rangeEnd) => {
+  const { data: user } = await supabase.auth.getUser();
+  const userId = user?.user?.id;
+  if (!userId) return [];
+  let q = supabase
+    .from('sessions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('scheduled_at', { ascending: true });
+  if (rangeStart) q = q.gte('scheduled_at', rangeStart);
+  if (rangeEnd) q = q.lt('scheduled_at', rangeEnd);
+  const { data, error } = await q;
+  if (error) {
+    console.error('fetchSessions error:', error);
+    return [];
+  }
+  return (data || []).map(sessionRowToObj);
+};
+
+export const createSession = async (session) => {
+  const { data: user } = await supabase.auth.getUser();
+  const userId = user?.user?.id;
+  if (!userId) return null;
+  const row = {
+    id: session.id,
+    user_id: userId,
+    client_id: session.clientId,
+    scheduled_at: session.scheduledAt,
+    duration_minutes: session.durationMinutes ?? 60,
+    status: session.status ?? 'upcoming',
+    notes: session.notes ?? '',
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('sessions').insert(row);
+  if (error) console.error('createSession error:', error);
+  return session.id;
+};
+
+export const updateSessionRow = async (id, patch) => {
+  const row = { updated_at: new Date().toISOString() };
+  if (patch.clientId !== undefined) row.client_id = patch.clientId;
+  if (patch.scheduledAt !== undefined) row.scheduled_at = patch.scheduledAt;
+  if (patch.durationMinutes !== undefined)
+    row.duration_minutes = patch.durationMinutes;
+  if (patch.status !== undefined) row.status = patch.status;
+  if (patch.notes !== undefined) row.notes = patch.notes;
+  const { error } = await supabase.from('sessions').update(row).eq('id', id);
+  if (error) console.error('updateSessionRow error:', error);
+};
+
+export const deleteSession = async (id) => {
+  const { error } = await supabase.from('sessions').delete().eq('id', id);
+  if (error) console.error('deleteSession error:', error);
+};
+
 // Subscribe to remote changes on both tables for this user. Any event triggers
 // a full refetch + onChange(nextState). Returns an unsubscribe fn.
 export const subscribeToUserState = (userId, onChange) => {
@@ -191,6 +257,25 @@ export const subscribeToUserState = (userId, onChange) => {
     )
     .subscribe();
 
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
+export const subscribeToSessions = (userId, onChange) => {
+  const channel = supabase
+    .channel(`sessions:${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'sessions',
+        filter: `user_id=eq.${userId}`,
+      },
+      onChange
+    )
+    .subscribe();
   return () => {
     supabase.removeChannel(channel);
   };

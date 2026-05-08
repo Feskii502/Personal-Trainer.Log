@@ -79,6 +79,46 @@ create policy "library delete own"
   on public.library_exercises for delete
   using (auth.uid() = user_id);
 
+-- ---------- sessions (scheduled appointments) ----------
+create table if not exists public.sessions (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  client_id text not null,
+  scheduled_at timestamptz not null,
+  duration_minutes integer not null default 60,
+  status text not null default 'upcoming',
+  notes text default '',
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists sessions_user_id_idx on public.sessions(user_id);
+create index if not exists sessions_scheduled_at_idx on public.sessions(scheduled_at);
+create index if not exists sessions_user_scheduled_idx on public.sessions(user_id, scheduled_at);
+
+alter table public.sessions enable row level security;
+
+drop policy if exists "sessions read own" on public.sessions;
+drop policy if exists "sessions insert own" on public.sessions;
+drop policy if exists "sessions update own" on public.sessions;
+drop policy if exists "sessions delete own" on public.sessions;
+
+create policy "sessions read own"
+  on public.sessions for select
+  using (auth.uid() = user_id);
+
+create policy "sessions insert own"
+  on public.sessions for insert
+  with check (auth.uid() = user_id);
+
+create policy "sessions update own"
+  on public.sessions for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "sessions delete own"
+  on public.sessions for delete
+  using (auth.uid() = user_id);
+
 -- ---------- realtime ----------
 do $$
 begin
@@ -93,5 +133,11 @@ begin
     where pubname = 'supabase_realtime' and tablename = 'library_exercises'
   ) then
     alter publication supabase_realtime add table public.library_exercises;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'sessions'
+  ) then
+    alter publication supabase_realtime add table public.sessions;
   end if;
 end $$;

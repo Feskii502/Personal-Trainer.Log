@@ -1,26 +1,280 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Plus,
   Trash2,
-  Calendar,
   NotebookPen,
   Apple,
   Dumbbell,
   LineChart as LineChartIcon,
+  ChevronRight,
 } from 'lucide-react';
-import { useStore, updateClient, deleteClient, deleteWeek } from '../lib/store.js';
-import { daysUntil, fmtDate, initialsOf, cx } from '../lib/utils.js';
+import {
+  useStore,
+  updateClient,
+  deleteClient,
+} from '../lib/store.js';
+import {
+  daysUntil,
+  fmtDate,
+  initialsOf,
+  cx,
+  phaseColor,
+} from '../lib/utils.js';
 import AddWeekModal from './AddWeekModal.jsx';
-import PhaseBadge from './ui/PhaseBadge.jsx';
 import ProgressTab from './ProgressTab.jsx';
 
+const PACKAGE_SIZE = 10;
+
 const TABS = [
+  { key: 'weeks', label: 'Weeks', icon: Dumbbell },
+  { key: 'progress', label: 'Progress', icon: LineChartIcon },
   { key: 'notes', label: 'Notes', icon: NotebookPen },
   { key: 'diet', label: 'Diet', icon: Apple },
-  { key: 'progress', label: 'Progress', icon: LineChartIcon },
-  { key: 'weeks', label: 'Weeks', icon: Dumbbell },
 ];
+
+function dayStats(day) {
+  let sets = 0;
+  let completed = 0;
+  for (const k of ['warmUp', 'resistance', 'coolDown']) {
+    for (const ex of day.sections[k]) {
+      for (const s of ex.sets) {
+        sets++;
+        if (s.completed) completed++;
+      }
+    }
+  }
+  return { sets, completed };
+}
+
+function clientStats(client) {
+  let sessionsLogged = 0;
+  let totalSets = 0;
+  let completedSets = 0;
+  let totalVolume = 0;
+  for (const w of client.weeks || []) {
+    for (const d of w.days) {
+      const ds = dayStats(d);
+      totalSets += ds.sets;
+      completedSets += ds.completed;
+      if (ds.sets > 0 && ds.completed >= ds.sets) sessionsLogged++;
+      for (const k of ['warmUp', 'resistance', 'coolDown']) {
+        for (const ex of d.sections[k]) {
+          for (const s of ex.sets) {
+            if (s.weight && s.reps) totalVolume += s.weight * s.reps;
+          }
+        }
+      }
+    }
+  }
+  const remainingInCycle =
+    PACKAGE_SIZE - (sessionsLogged % PACKAGE_SIZE);
+  return {
+    sessionsLogged,
+    totalSets,
+    completedSets,
+    totalVolume,
+    sessionsLeft: remainingInCycle,
+  };
+}
+
+const fmtVol = (kg) =>
+  kg >= 1000 ? `${(kg / 1000).toFixed(1)}t` : `${Math.round(kg)}kg`;
+
+function SectionTitle({ children, className = '' }) {
+  return <div className={cx('section-title', className)}>{children}</div>;
+}
+
+function Chip({ children, color = '#8A8A90' }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill text-[11px] font-semibold tabular border"
+      style={{
+        color,
+        background: color + '1F',
+        borderColor: color + '40',
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function HeaderCard({ client, stats, onDelete }) {
+  const phase = client.weeks?.[client.weeks.length - 1]?.phase;
+  const phaseHex = phaseColor(phase);
+  const du = daysUntil(client.expiryDate);
+  const expired = du < 0;
+  const expiring = du >= 0 && du <= 30;
+  const remainingPct = (stats.sessionsLeft / PACKAGE_SIZE) * 100;
+  const remainingColor =
+    stats.sessionsLeft <= 2
+      ? '#FF4D3A'
+      : stats.sessionsLeft <= 4
+      ? '#FF8A3A'
+      : '#D4FF3A';
+
+  return (
+    <div className="card p-5 sm:p-6">
+      <div className="flex items-start gap-4 flex-wrap">
+        <div
+          className="rounded-full flex items-center justify-center font-display font-bold relative flex-shrink-0"
+          style={{
+            width: 64,
+            height: 64,
+            background: '#1C1C1F',
+            color: '#D4FF3A',
+            border: '1px solid #26262A',
+            fontSize: 22,
+          }}
+        >
+          {initialsOf(client.name) || '·'}
+          {phase && (
+            <span
+              className="absolute -bottom-0.5 -right-0.5 rounded-full"
+              style={{
+                width: 16,
+                height: 16,
+                background: phaseHex,
+                border: '2px solid #141416',
+              }}
+            />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-display font-bold tracking-tight text-2xl sm:text-3xl truncate">
+              {client.name}
+            </h1>
+            {expired ? (
+              <Chip color="#FF4D3A">Expired</Chip>
+            ) : expiring ? (
+              <Chip color="#FF8A3A">{du}d left</Chip>
+            ) : Number.isFinite(du) ? (
+              <Chip color="#3ADBC7">Active · {du}d</Chip>
+            ) : (
+              <Chip color="#3ADBC7">Active</Chip>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1.5 text-[11px] text-txt-secondary flex-wrap">
+            {phase && (
+              <>
+                <span
+                  className="inline-block rounded-full"
+                  style={{ width: 8, height: 8, background: phaseHex }}
+                />
+                <span className="uppercase tracking-wide">{phase}</span>
+                <span className="text-txt-muted">·</span>
+              </>
+            )}
+            <span className="text-txt-muted">
+              joined {fmtDate(client.signupDate)}
+            </span>
+            {client.height && (
+              <>
+                <span className="text-txt-muted">·</span>
+                <span className="text-txt-muted">
+                  {client.height} cm
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={onDelete}
+          className="btn-icon text-txt-muted hover:text-brand-red"
+          aria-label="Delete client"
+          title="Delete client"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+
+      <div
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-border"
+      >
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-txt-muted">
+            Weeks
+          </div>
+          <div className="font-display tabular font-bold text-2xl mt-0.5">
+            {client.weeks?.length || 0}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-txt-muted">
+            Sessions
+          </div>
+          <div className="font-display tabular font-bold text-2xl mt-0.5">
+            {stats.sessionsLogged}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-txt-muted">
+            Volume
+          </div>
+          <div className="font-display tabular font-bold text-2xl mt-0.5">
+            {fmtVol(stats.totalVolume)}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-txt-muted flex items-center gap-1.5">
+            Sessions left
+          </div>
+          <div className="flex items-baseline gap-1 mt-0.5">
+            <span
+              className="font-display tabular font-bold text-2xl"
+              style={{ color: remainingColor }}
+            >
+              {stats.sessionsLeft}
+            </span>
+            <span className="text-[11px] tabular text-txt-muted">
+              / {PACKAGE_SIZE}
+            </span>
+          </div>
+          <div
+            className="h-1 rounded-full overflow-hidden mt-2"
+            style={{ background: '#1C1C1F' }}
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: remainingPct + '%',
+                background: remainingColor,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabNav({ active, onPick }) {
+  return (
+    <div className="card p-1 flex items-center gap-1 overflow-x-auto no-scrollbar">
+      {TABS.map((t) => {
+        const Icon = t.icon;
+        const isActive = active === t.key;
+        return (
+          <button
+            key={t.key}
+            onClick={() => onPick(t.key)}
+            className={cx(
+              'flex-1 sm:flex-none h-11 px-4 rounded-btn text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors flex-shrink-0',
+              isActive
+                ? 'bg-brand-lime text-black'
+                : 'text-txt-secondary hover:text-txt-primary'
+            )}
+          >
+            <Icon size={14} />
+            <span>{t.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function NotesTab({ client }) {
   const [training, setTraining] = useState(client.trainingNotes || '');
@@ -40,9 +294,9 @@ function NotesTab({ client }) {
   }, [training, weaknesses]); // eslint-disable-line
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <div className="card p-5">
-        <div className="section-title mb-3">Training Notes</div>
+        <SectionTitle className="mb-3">Training Notes</SectionTitle>
         <textarea
           className="input resize-none w-full"
           style={{ minHeight: 280 }}
@@ -52,7 +306,7 @@ function NotesTab({ client }) {
         />
       </div>
       <div className="card p-5">
-        <div className="section-title mb-3">Weaknesses & Watchouts</div>
+        <SectionTitle className="mb-3">Weaknesses & Watchouts</SectionTitle>
         <textarea
           className="input resize-none w-full"
           style={{ minHeight: 280 }}
@@ -78,7 +332,7 @@ function DietTab({ client }) {
 
   return (
     <div className="card p-5">
-      <div className="section-title mb-3">Diet & Nutrition</div>
+      <SectionTitle className="mb-3">Diet & Nutrition</SectionTitle>
       <textarea
         className="input resize-none w-full"
         style={{ minHeight: 360 }}
@@ -90,63 +344,139 @@ function DietTab({ client }) {
   );
 }
 
+function WeekCard({ week, onOpen }) {
+  const phaseHex = phaseColor(week.phase);
+  const stats = useMemo(() => {
+    let total = 0;
+    let done = 0;
+    let exercises = 0;
+    let volume = 0;
+    for (const d of week.days) {
+      for (const k of ['warmUp', 'resistance', 'coolDown']) {
+        exercises += d.sections[k].length;
+        for (const ex of d.sections[k]) {
+          for (const s of ex.sets) {
+            total++;
+            if (s.completed) done++;
+            if (s.weight && s.reps) volume += s.weight * s.reps;
+          }
+        }
+      }
+    }
+    return { total, done, exercises, volume };
+  }, [week]);
+  const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+
+  return (
+    <button
+      onClick={onOpen}
+      className="card p-5 text-left flex flex-col gap-4 transition-all hover:border-[#3a3a40] active:scale-[0.99] relative overflow-hidden"
+    >
+      <div
+        className="absolute top-0 left-0 right-0"
+        style={{ height: 3, background: phaseHex }}
+      />
+      <div className="flex items-start justify-between">
+        <div>
+          <SectionTitle>Week</SectionTitle>
+          <div className="font-display text-3xl font-bold tabular leading-none mt-1">
+            {week.number}
+          </div>
+        </div>
+        <div className="text-right">
+          <SectionTitle>Phase</SectionTitle>
+          <div className="flex items-center gap-1.5 mt-1.5 justify-end">
+            <span
+              className="inline-block rounded-full"
+              style={{ width: 8, height: 8, background: phaseHex }}
+            />
+            <span className="text-[12px] uppercase tracking-wide font-semibold">
+              {week.phase}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <div className="text-[9px] uppercase tracking-wider text-txt-muted">
+            Exercises
+          </div>
+          <div className="font-display tabular font-bold text-base mt-0.5">
+            {stats.exercises}
+          </div>
+        </div>
+        <div>
+          <div className="text-[9px] uppercase tracking-wider text-txt-muted">
+            Sets
+          </div>
+          <div className="font-display tabular font-bold text-base mt-0.5">
+            {stats.done}
+            <span className="text-txt-muted text-[12px]">/{stats.total}</span>
+          </div>
+        </div>
+        <div>
+          <div className="text-[9px] uppercase tracking-wider text-txt-muted">
+            Volume
+          </div>
+          <div className="font-display tabular font-bold text-base mt-0.5">
+            {fmtVol(stats.volume)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-auto">
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-txt-muted mb-1">
+          <span>Progress</span>
+          <span className="tabular" style={{ color: pct === 100 ? phaseHex : '#8A8A90' }}>
+            {pct}%
+          </span>
+        </div>
+        <div
+          className="h-1.5 rounded-full overflow-hidden"
+          style={{ background: '#1C1C1F' }}
+        >
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: pct + '%', background: phaseHex }}
+          />
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function WeeksTab({ client, onOpenWeek }) {
   const [open, setOpen] = useState(false);
+  const hasWeeks = client.weeks && client.weeks.length > 0;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
-        <div className="section-title">Training Weeks</div>
+        <SectionTitle>Training Weeks</SectionTitle>
         <button className="btn-primary btn-sm" onClick={() => setOpen(true)}>
-          <Plus size={18} />
+          <Plus size={16} />
           Add Week
         </button>
       </div>
 
-      {(!client.weeks || client.weeks.length === 0) && (
+      {!hasWeeks ? (
         <div className="card p-10 text-center">
           <div className="font-display text-lg mb-1">No weeks yet</div>
-          <div className="text-txt-secondary mb-5">
+          <div className="text-txt-secondary mb-5 text-sm">
             Create a week and select a training phase to get started.
           </div>
           <button className="btn-primary" onClick={() => setOpen(true)}>
-            <Plus size={20} /> Add Week
+            <Plus size={18} /> Add Week
           </button>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {client.weeks.map((w) => (
+            <WeekCard key={w.id} week={w} onOpen={() => onOpenWeek(w.id)} />
+          ))}
+        </div>
       )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {client.weeks?.map((w) => {
-          const totalExercises = w.days.reduce(
-            (a, d) =>
-              a +
-              d.sections.warmUp.length +
-              d.sections.resistance.length +
-              d.sections.coolDown.length,
-            0
-          );
-          return (
-            <button
-              key={w.id}
-              onClick={() => onOpenWeek(w.id)}
-              className="card p-5 text-left transition-transform active:scale-[0.98] hover:border-[#333338] flex flex-col gap-4"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="section-title">Week</div>
-                  <div className="font-display text-3xl font-bold tabular">
-                    {w.number}
-                  </div>
-                </div>
-                <PhaseBadge phase={w.phase} />
-              </div>
-              <div className="text-sm text-txt-secondary tabular">
-                {totalExercises} exercise{totalExercises === 1 ? '' : 's'} logged
-              </div>
-            </button>
-          );
-        })}
-      </div>
 
       <AddWeekModal
         open={open}
@@ -161,7 +491,7 @@ function WeeksTab({ client, onOpenWeek }) {
 export default function ClientProfile({ clientId, onBack, onOpenWeek }) {
   const { clients } = useStore();
   const client = clients.find((c) => c.id === clientId);
-  const [tab, setTab] = useState('notes');
+  const [tab, setTab] = useState('weeks');
 
   if (!client) {
     return (
@@ -176,176 +506,41 @@ export default function ClientProfile({ clientId, onBack, onOpenWeek }) {
     );
   }
 
-  const du = daysUntil(client.expiryDate);
-  const expired = du < 0;
-  const expiring = du >= 0 && du <= 30;
+  const stats = clientStats(client);
 
-  const Sidebar = (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-4">
-        <div
-          className="flex items-center justify-center rounded-full font-display font-bold"
-          style={{
-            width: 64,
-            height: 64,
-            background: '#1C1C1F',
-            color: '#D4FF3A',
-            fontSize: 22,
-            border: '1px solid #26262A',
-          }}
-        >
-          {initialsOf(client.name)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-display text-2xl font-semibold tracking-tight truncate">
-            {client.name}
-          </div>
-          <div className="text-txt-secondary text-sm flex items-center gap-1.5 mt-0.5">
-            <Calendar size={14} /> {fmtDate(client.signupDate)}
-          </div>
-        </div>
-      </div>
-
-      <div className="card p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="section-title">Expiry</span>
-          <span className="text-sm tabular text-txt-primary">
-            {fmtDate(client.expiryDate)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="section-title">Status</span>
-          {expired ? (
-            <span
-              className="chip"
-              style={{
-                color: '#FF4D3A',
-                background: '#FF4D3A14',
-                borderColor: '#FF4D3A33',
-              }}
-            >
-              Expired
-            </span>
-          ) : expiring ? (
-            <span
-              className="chip"
-              style={{
-                color: '#FF8A3A',
-                background: '#FF8A3A14',
-                borderColor: '#FF8A3A33',
-              }}
-            >
-              {du}d left
-            </span>
-          ) : (
-            <span className="chip text-txt-secondary">Active</span>
-          )}
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="section-title">Height</span>
-          <span className="text-sm tabular">
-            {client.height ? `${client.height} cm` : '—'}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="section-title">Weeks</span>
-          <span className="text-sm tabular">
-            {client.weeks?.length || 0}
-          </span>
-        </div>
-      </div>
-
-      <nav className="flex flex-col gap-1.5">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={cx(
-                'flex items-center gap-3 px-4 rounded-btn text-sm font-semibold transition-colors',
-                active
-                  ? 'bg-bg-elevated text-brand-lime border border-border'
-                  : 'text-txt-secondary hover:text-txt-primary'
-              )}
-              style={{ minHeight: 48 }}
-            >
-              <Icon size={18} />
-              {t.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="mt-auto pt-4 border-t border-border">
-        <button
-          className="btn-secondary w-full text-brand-red border-brand-red/40"
-          onClick={() => {
-            if (confirm(`Delete ${client.name}? This cannot be undone.`)) {
-              deleteClient(client.id);
-              onBack();
-            }
-          }}
-        >
-          <Trash2 size={18} /> Delete Client
-        </button>
-      </div>
-    </div>
-  );
+  const onDelete = () => {
+    if (confirm(`Delete ${client.name}? This cannot be undone.`)) {
+      deleteClient(client.id);
+      onBack();
+    }
+  };
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20">
-        <div className="flex items-center justify-between mb-6">
-          <button className="btn-icon text-txt-secondary" onClick={onBack}>
-            <ArrowLeft size={22} />
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20 space-y-5">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="btn-icon text-txt-secondary hover:text-txt-primary"
+            aria-label="Back"
+          >
+            <ArrowLeft size={20} />
           </button>
-          <div className="section-title">Client Profile</div>
+          <SectionTitle>Client Profile</SectionTitle>
           <div style={{ width: 44 }} />
         </div>
 
-        {/* Mobile: stacked. Tablet landscape: split pane. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
-          <aside className="lg:sticky lg:top-6 lg:self-start">
-            <div className="card p-5">{Sidebar}</div>
-          </aside>
+        <HeaderCard client={client} stats={stats} onDelete={onDelete} />
 
-          <section>
-            {/* Portrait / small: top tab bar */}
-            <div className="lg:hidden mb-5">
-              <div className="flex gap-2 bg-bg-surface border border-border rounded-btn p-1">
-                {TABS.map((t) => {
-                  const active = tab === t.key;
-                  const Icon = t.icon;
-                  return (
-                    <button
-                      key={t.key}
-                      onClick={() => setTab(t.key)}
-                      className={cx(
-                        'flex-1 flex items-center justify-center gap-2 rounded-btn text-sm font-semibold transition-colors',
-                        active
-                          ? 'bg-bg-elevated text-brand-lime'
-                          : 'text-txt-secondary'
-                      )}
-                      style={{ minHeight: 48 }}
-                      aria-label={t.label}
-                    >
-                      <Icon size={16} />
-                      <span className="hidden sm:inline">{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        <TabNav active={tab} onPick={setTab} />
 
-            {tab === 'notes' && <NotesTab client={client} />}
-            {tab === 'diet' && <DietTab client={client} />}
-            {tab === 'progress' && <ProgressTab client={client} />}
-            {tab === 'weeks' && (
-              <WeeksTab client={client} onOpenWeek={onOpenWeek} />
-            )}
-          </section>
+        <div>
+          {tab === 'weeks' && (
+            <WeeksTab client={client} onOpenWeek={onOpenWeek} />
+          )}
+          {tab === 'progress' && <ProgressTab client={client} />}
+          {tab === 'notes' && <NotesTab client={client} />}
+          {tab === 'diet' && <DietTab client={client} />}
         </div>
       </div>
     </div>

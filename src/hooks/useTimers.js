@@ -47,6 +47,20 @@ export const getRestRemaining = (id) => {
   return { remaining, total: r.duration, active: remaining > 0 };
 };
 
+// Most recently started rest that is still active. Returns { id, remaining, total }
+// or null. Used by the sticky session-level rest panel.
+export const getActiveRest = () => {
+  let best = null;
+  for (const [id, r] of Object.entries(state.rests)) {
+    const remaining = r.duration - (Date.now() - r.startedAt) / 1000;
+    if (remaining <= 0) continue;
+    if (!best || r.startedAt > best.startedAt) {
+      best = { id, startedAt: r.startedAt, remaining, total: r.duration };
+    }
+  }
+  return best;
+};
+
 export function useTimerStore() {
   const [, setTick] = useState(0);
   useEffect(() => {

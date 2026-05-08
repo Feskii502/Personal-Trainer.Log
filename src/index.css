@@ -14,6 +14,16 @@
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
   }
+  body.pt-bg,
+  .pt-bg {
+    background-color: #0a0a0b !important;
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.075) 1.4px, transparent 1.6px),
+      radial-gradient(rgba(255, 255, 255, 0.05) 1.1px, transparent 1.3px) !important;
+    background-size: 22px 22px, 22px 22px !important;
+    background-position: 0 0, 11px 11px !important;
+    background-attachment: fixed;
+  }
   input,
   textarea,
   button,

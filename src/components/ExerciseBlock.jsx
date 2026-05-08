@@ -460,8 +460,6 @@ export default function ExerciseBlock({
           ))
         )}
 
-        <RestCountdown exerciseId={exercise.id} />
-
         <div className="flex items-center justify-between gap-3 pt-2 flex-wrap">
           <button
             className="btn-secondary btn-sm"
