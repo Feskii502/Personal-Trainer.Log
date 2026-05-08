@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Plus, Trash2 } from 'lucide-react';
-import { addMetric, removeMetric } from '../lib/store.js';
+import { addMetric, removeMetric, updateClient } from '../lib/store.js';
 import { calcBMI, cx, fmtDate } from '../lib/utils.js';
 
 const METRICS = [
@@ -162,12 +162,26 @@ export default function ProgressTab({ client }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 max-sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="card p-4">
-          <div className="section-title">Height · fixed</div>
-          <div className="font-display text-2xl font-bold tabular mt-1">
-            {client.height ? `${client.height} cm` : '—'}
+          <div className="section-title flex items-center justify-between">
+            <span>Height</span>
+            <span className="text-[9px] text-txt-muted">cm</span>
           </div>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            placeholder="—"
+            value={client.height ?? ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              updateClient(client.id, {
+                height: v === '' ? null : Number(v),
+              });
+            }}
+            className="font-display text-2xl font-bold tabular mt-1 bg-transparent outline-none focus:text-brand-lime placeholder:text-txt-muted w-full"
+          />
         </div>
         <div className="card p-4">
           <div className="section-title">Weight</div>

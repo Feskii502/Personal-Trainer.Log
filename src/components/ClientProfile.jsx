@@ -100,6 +100,48 @@ function Chip({ children, color = '#8A8A90' }) {
   );
 }
 
+function EditableHeight({ client }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(client.height ?? '');
+  useEffect(() => setVal(client.height ?? ''), [client.height, client.id]);
+  const commit = () => {
+    const v = String(val).trim();
+    updateClient(client.id, { height: v === '' ? null : Number(v) });
+    setEditing(false);
+  };
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        inputMode="decimal"
+        step="0.1"
+        placeholder="cm"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') {
+            setVal(client.height ?? '');
+            setEditing(false);
+          }
+        }}
+        className="bg-transparent outline-none border-b border-brand-lime text-txt-muted tabular w-16"
+      />
+    );
+  }
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      className="text-txt-muted hover:text-brand-lime transition-colors"
+      title="Edit height"
+    >
+      {client.height ? `${client.height} cm` : '+ Add height'}
+    </button>
+  );
+}
+
 function HeaderCard({ client, stats, onDelete }) {
   const phase = client.weeks?.[client.weeks.length - 1]?.phase;
   const phaseHex = phaseColor(phase);
@@ -170,14 +212,8 @@ function HeaderCard({ client, stats, onDelete }) {
             <span className="text-txt-muted">
               joined {fmtDate(client.signupDate)}
             </span>
-            {client.height && (
-              <>
-                <span className="text-txt-muted">·</span>
-                <span className="text-txt-muted">
-                  {client.height} cm
-                </span>
-              </>
-            )}
+            <span className="text-txt-muted">·</span>
+            <EditableHeight client={client} />
           </div>
         </div>
         <button
