@@ -48,12 +48,12 @@ export default function SessionTabBar({
             }}
           >
             <span className="font-display font-bold text-[13px] tracking-tight">
-              <span className="text-brand-lime">P</span>T
+              <span className="text-brand-lime">F</span>·
             </span>
           </div>
           <div className="hidden sm:block text-left">
             <div className="text-[9px] uppercase tracking-[0.2em] text-txt-muted leading-none">
-              PT.LOG
+              FITATS
             </div>
             <div className="text-[11px] font-semibold leading-tight group-hover:text-brand-lime transition-colors">
               Dashboard

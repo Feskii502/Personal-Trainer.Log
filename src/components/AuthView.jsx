@@ -27,7 +27,7 @@ export default function AuthView() {
         className="card p-6 sm:p-8 w-full max-w-[420px] flex flex-col gap-5"
       >
         <div>
-          <div className="section-title mb-1">Coach Workbook</div>
+          <div className="section-title mb-1">Fitats</div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
             Sign in
           </h1>

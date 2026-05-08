@@ -155,15 +155,15 @@ function Topbar({ now, onOpenSettings, onSignOut, userEmail }) {
             className="font-display font-bold tracking-tight"
             style={{ color: '#D4FF3A', fontSize: 22, lineHeight: 1 }}
           >
-            P<span style={{ color: '#F5F5F7' }}>T</span>
+            F<span style={{ color: '#F5F5F7' }}>·</span>
           </div>
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-txt-muted">
-            PT.LOG · TRAINER
+            FITATS
           </div>
           <div className="font-display font-semibold tracking-tight text-[18px] sm:text-[20px]">
-            Studio Floor
+            Dashboard
           </div>
         </div>
       </div>
@@ -935,7 +935,7 @@ export default function HomeScreen({
 
         <footer className="mt-10 pt-6 border-t border-border flex items-center justify-between text-[11px] tabular text-txt-muted">
           <div>
-            PT.LOG · trainer.dashboard · synced{' '}
+            Fitats · dashboard · synced{' '}
             {now.toLocaleTimeString(undefined, {
               hour: '2-digit',
               minute: '2-digit',
