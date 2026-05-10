@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Plus, Flame, Dumbbell, Snowflake, Search, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Plus,
+  Flame,
+  Dumbbell,
+  Snowflake,
+  Search,
+  X,
+  GripVertical,
+} from 'lucide-react';
 import {
   useStore,
   updateDay,
@@ -24,6 +33,7 @@ import RestRing from './ui/RestRing.jsx';
 import AddExerciseModal from './AddExerciseModal.jsx';
 import ExerciseBlock from './ExerciseBlock.jsx';
 import BetweenExerciseRest from './BetweenExerciseRest.jsx';
+import ReorderExercisesModal from './ReorderExercisesModal.jsx';
 
 const SECTIONS = [
   { key: 'warmUp', label: 'Warm Up', icon: Flame },
@@ -303,6 +313,7 @@ export default function DayView({
   const [section, setSection] = useState('resistance');
   const [picker, setPicker] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [reorderOpen, setReorderOpen] = useState(false);
 
   if (!day) {
     return (
@@ -416,30 +427,40 @@ export default function DayView({
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="section-title">
               {exercises.length} exercise
               {exercises.length === 1 ? '' : 's'} · {sectionLabel}
             </div>
-            <button
-              onClick={() => setPicker((p) => !p)}
-              className={cx(
-                'h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 transition-colors',
-                picker
-                  ? 'bg-bg-elevated text-txt-primary border border-border'
-                  : 'bg-brand-lime text-black'
+            <div className="flex items-center gap-2">
+              {exercises.length > 1 && (
+                <button
+                  onClick={() => setReorderOpen(true)}
+                  className="h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 border border-border text-txt-secondary hover:text-txt-primary hover:border-[#3a3a40]"
+                >
+                  <GripVertical size={14} /> Reorder
+                </button>
               )}
-            >
-              {picker ? (
-                <>
-                  <X size={14} /> Close
-                </>
-              ) : (
-                <>
-                  <Plus size={14} /> Quick Add
-                </>
-              )}
-            </button>
+              <button
+                onClick={() => setPicker((p) => !p)}
+                className={cx(
+                  'h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 transition-colors',
+                  picker
+                    ? 'bg-bg-elevated text-txt-primary border border-border'
+                    : 'bg-brand-lime text-black'
+                )}
+              >
+                {picker ? (
+                  <>
+                    <X size={14} /> Close
+                  </>
+                ) : (
+                  <>
+                    <Plus size={14} /> Quick Add
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {picker && (
@@ -491,6 +512,16 @@ export default function DayView({
           )}
         </div>
       </div>
+
+      <ReorderExercisesModal
+        open={reorderOpen}
+        onClose={() => setReorderOpen(false)}
+        clientId={clientId}
+        weekId={weekId}
+        dayId={dayId}
+        section={section}
+        exercises={exercises}
+      />
 
       <AddExerciseModal
         open={createOpen}

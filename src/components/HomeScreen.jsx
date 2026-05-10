@@ -127,7 +127,7 @@ function PhaseDot({ phase, size = 8 }) {
 }
 
 // ---------- Topbar ----------
-function Topbar({ now, onOpenSettings, onSignOut, userEmail }) {
+function Topbar({ now, onOpenSettings, onSignOut, userEmail, userName }) {
   const dateStr = now.toLocaleDateString(undefined, {
     weekday: 'long',
     day: 'numeric',
@@ -137,7 +137,9 @@ function Topbar({ now, onOpenSettings, onSignOut, userEmail }) {
     hour: '2-digit',
     minute: '2-digit',
   });
-  const initials = (userEmail || '').slice(0, 2).toUpperCase();
+  const initials = userName
+    ? initialsOf(userName)
+    : (userEmail || '').slice(0, 2).toUpperCase();
   return (
     <header className="flex items-center justify-between gap-4 mb-7">
       <div className="flex items-center gap-3">
@@ -803,10 +805,13 @@ export default function HomeScreen({
   const [openSchedule, setOpenSchedule] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserEmail(data?.user?.email || '');
+      const meta = data?.user?.user_metadata || {};
+      setUserName(meta.full_name || meta.name || '');
     });
   }, []);
 
@@ -818,9 +823,12 @@ export default function HomeScreen({
   const range = useMemo(() => weekRangeIso(), []);
   const { sessions, add: addSchedule } = useSessions(range.start, range.end);
 
-  const greetingName = userEmail ? userEmail.split('@')[0] : 'Coach';
-  const greetingDisplay =
-    greetingName.charAt(0).toUpperCase() + greetingName.slice(1);
+  const greetingDisplay = userName
+    ? userName.split(' ')[0]
+    : userEmail
+    ? userEmail.split('@')[0].charAt(0).toUpperCase() +
+      userEmail.split('@')[0].slice(1)
+    : 'Coach';
 
   return (
     <div className="min-h-full">
@@ -829,6 +837,7 @@ export default function HomeScreen({
           now={now}
           onOpenSettings={onOpenSettings}
           userEmail={userEmail}
+          userName={userName}
         />
 
         {/* Active sessions strip */}

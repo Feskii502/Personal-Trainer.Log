@@ -11,6 +11,7 @@ import {
   Timer,
   ArrowUp,
   ArrowDown,
+  Check,
 } from 'lucide-react';
 import {
   addSet,
@@ -128,6 +129,28 @@ function SetRow({
     />
   );
 
+  const toggleDone = () => patch({ completed: !set.completed });
+
+  const checkBtn = (
+    <button
+      onClick={toggleDone}
+      aria-label={set.completed ? 'Mark set incomplete' : 'Mark set complete'}
+      title={set.completed ? 'Mark incomplete' : 'Mark complete'}
+      className="inline-flex items-center justify-center rounded-btn transition-colors flex-shrink-0"
+      style={{
+        width: 44,
+        height: 44,
+        background: set.completed ? '#D4FF3A' : 'transparent',
+        border: set.completed
+          ? '1px solid #D4FF3A'
+          : '1px solid #3a3a40',
+        color: set.completed ? '#0A0A0B' : '#8A8A90',
+      }}
+    >
+      <Check size={18} strokeWidth={3} />
+    </button>
+  );
+
   const timerBtn = running ? (
     <button
       onClick={stop}
@@ -172,6 +195,7 @@ function SetRow({
         </div>
         <div className="flex items-center gap-2">
           <div className="flex-1">{timerBtn}</div>
+          {checkBtn}
           <button
             onClick={() =>
               addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
@@ -195,7 +219,7 @@ function SetRow({
         className="hidden sm:grid items-center gap-2 p-3"
         style={{
           gridTemplateColumns:
-            'minmax(44px,56px) minmax(90px,1fr) minmax(90px,1fr) minmax(160px,auto) auto auto',
+            'minmax(44px,56px) minmax(90px,1fr) minmax(90px,1fr) minmax(160px,auto) auto auto auto',
         }}
       >
         <div className="tabular font-display font-bold text-lg text-txt-secondary pl-2">
@@ -216,6 +240,7 @@ function SetRow({
             <ChevronDown size={18} />
           </button>
         </div>
+        {checkBtn}
         <div />
         <button
           onClick={remove}

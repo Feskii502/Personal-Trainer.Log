@@ -236,6 +236,24 @@ export const addExerciseToDay = (
   return ex.id;
 };
 
+export const setExerciseOrder = (clientId, weekId, dayId, section, orderedIds) => {
+  update((s) =>
+    mapDay(s, clientId, weekId, dayId, (d) => {
+      const list = d.sections[section];
+      const byId = new Map(list.map((e) => [e.id, e]));
+      const next = orderedIds.map((id) => byId.get(id)).filter(Boolean);
+      // Append any exercises that weren't in orderedIds (defensive).
+      for (const e of list) {
+        if (!orderedIds.includes(e.id)) next.push(e);
+      }
+      return {
+        ...d,
+        sections: { ...d.sections, [section]: next },
+      };
+    })
+  );
+};
+
 export const moveExercise = (clientId, weekId, dayId, section, exId, dir) => {
   update((s) =>
     mapDay(s, clientId, weekId, dayId, (d) => {
