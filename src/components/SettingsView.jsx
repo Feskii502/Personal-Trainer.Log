@@ -1,561 +1,539 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
-  Plus,
-  Search,
-  Trash2,
-  Edit3,
-  Check,
-  X,
-  Users,
-  Dumbbell,
+  User as UserIcon,
+  Download,
   LogOut,
+  Save,
+  Mail,
+  Lock,
+  Check,
+  FileSpreadsheet,
+  AlertTriangle,
 } from 'lucide-react';
-import {
-  useStore,
-  addLibraryExercise,
-  updateLibraryExercise,
-  removeLibraryExercise,
-  updateClient,
-  deleteClient,
-} from '../lib/store.js';
+import { useStore } from '../lib/store.js';
 import { supabase } from '../lib/supabase.js';
+import { cx, initialsOf, daysUntil } from '../lib/utils.js';
 import {
-  MUSCLE_GROUPS,
-  EXERCISE_TYPES,
-  cx,
-  fmtDate,
-} from '../lib/utils.js';
-
-const toDateInput = (iso) => (iso ? new Date(iso).toISOString().slice(0, 10) : '');
-
-function ExercisesTab() {
-  const { library } = useStore();
-  const [q, setQ] = useState('');
-  const [muscle, setMuscle] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState(null);
-  const [creating, setCreating] = useState(false);
-  const [newDraft, setNewDraft] = useState({
-    name: '',
-    mainMuscle: MUSCLE_GROUPS[0],
-    subMuscles: [],
-    type: '+kg',
-  });
-
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return library
-      .filter((ex) => (!muscle || ex.mainMuscle === muscle))
-      .filter((ex) => !s || ex.name.toLowerCase().includes(s));
-  }, [library, q, muscle]);
-
-  const startEdit = (ex) => {
-    setEditingId(ex.id);
-    setDraft({ ...ex });
-  };
-
-  const saveEdit = () => {
-    if (!draft.name.trim()) return;
-    updateLibraryExercise(editingId, {
-      name: draft.name.trim(),
-      mainMuscle: draft.mainMuscle,
-      subMuscles: draft.subMuscles,
-      type: draft.type,
-    });
-    setEditingId(null);
-    setDraft(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setDraft(null);
-  };
-
-  const createNew = () => {
-    if (!newDraft.name.trim()) return;
-    addLibraryExercise({
-      name: newDraft.name.trim(),
-      mainMuscle: newDraft.mainMuscle,
-      subMuscles: newDraft.subMuscles,
-      type: newDraft.type,
-    });
-    setNewDraft({
-      name: '',
-      mainMuscle: MUSCLE_GROUPS[0],
-      subMuscles: [],
-      type: '+kg',
-    });
-    setCreating(false);
-  };
-
-  const toggleSub = (arr, m, setter) => {
-    setter(arr.includes(m) ? arr.filter((x) => x !== m) : [...arr, m]);
-  };
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search
-            size={18}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-txt-secondary"
-          />
-          <input
-            className="input pl-11"
-            placeholder="Search exercises..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        <button className="btn-primary" onClick={() => setCreating((v) => !v)}>
-          <Plus size={18} /> New Exercise
-        </button>
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
-        <button
-          className={cx('chip shrink-0', !muscle && 'chip-active')}
-          onClick={() => setMuscle(null)}
-        >
-          All
-        </button>
-        {MUSCLE_GROUPS.map((m) => (
-          <button
-            key={m}
-            className={cx('chip shrink-0', muscle === m && 'chip-active')}
-            onClick={() => setMuscle(m === muscle ? null : m)}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-
-      {creating && (
-        <div className="card p-5 space-y-4">
-          <div className="section-title">New Exercise</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              autoFocus
-              className="input"
-              placeholder="Name"
-              value={newDraft.name}
-              onChange={(e) =>
-                setNewDraft((d) => ({ ...d, name: e.target.value }))
-              }
-            />
-            <select
-              className="input"
-              value={newDraft.mainMuscle}
-              onChange={(e) =>
-                setNewDraft((d) => ({ ...d, mainMuscle: e.target.value }))
-              }
-            >
-              {MUSCLE_GROUPS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <div className="section-title mb-2">Sub Muscles</div>
-            <div className="flex flex-wrap gap-2">
-              {MUSCLE_GROUPS.filter((m) => m !== newDraft.mainMuscle).map((m) => {
-                const active = newDraft.subMuscles.includes(m);
-                return (
-                  <button
-                    key={m}
-                    onClick={() =>
-                      toggleSub(newDraft.subMuscles, m, (arr) =>
-                        setNewDraft((d) => ({ ...d, subMuscles: arr }))
-                      )
-                    }
-                    className={cx('chip', active && 'chip-active')}
-                  >
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div>
-            <div className="section-title mb-2">Type</div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-bg-surface border border-border rounded-btn p-1">
-              {EXERCISE_TYPES.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setNewDraft((d) => ({ ...d, type: t.key }))}
-                  className={cx(
-                    'rounded-btn text-sm font-semibold',
-                    newDraft.type === t.key
-                      ? 'bg-bg-elevated text-brand-lime'
-                      : 'text-txt-secondary'
-                  )}
-                  style={{ minHeight: 44 }}
-                >
-                  {t.key}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button className="btn-secondary" onClick={() => setCreating(false)}>
-              Cancel
-            </button>
-            <button
-              className="btn-primary disabled:opacity-40"
-              disabled={!newDraft.name.trim()}
-              onClick={createNew}
-            >
-              <Plus size={18} /> Create
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="card divide-y divide-border">
-        {filtered.length === 0 && (
-          <div className="p-8 text-center text-txt-secondary">
-            No exercises match.
-          </div>
-        )}
-        {filtered.map((ex) => {
-          const isEditing = editingId === ex.id;
-          if (isEditing) {
-            return (
-              <div key={ex.id} className="p-4 space-y-3 bg-bg-elevated">
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_140px] gap-3">
-                  <input
-                    className="input"
-                    value={draft.name}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, name: e.target.value }))
-                    }
-                  />
-                  <select
-                    className="input"
-                    value={draft.mainMuscle}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, mainMuscle: e.target.value }))
-                    }
-                  >
-                    {MUSCLE_GROUPS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="input tabular"
-                    value={draft.type}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, type: e.target.value }))
-                    }
-                  >
-                    {EXERCISE_TYPES.map((t) => (
-                      <option key={t.key} value={t.key}>
-                        {t.key}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {MUSCLE_GROUPS.filter((m) => m !== draft.mainMuscle).map(
-                    (m) => {
-                      const active = (draft.subMuscles || []).includes(m);
-                      return (
-                        <button
-                          key={m}
-                          onClick={() =>
-                            toggleSub(draft.subMuscles || [], m, (arr) =>
-                              setDraft((d) => ({ ...d, subMuscles: arr }))
-                            )
-                          }
-                          className={cx('chip', active && 'chip-active')}
-                        >
-                          {m}
-                        </button>
-                      );
-                    }
-                  )}
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button className="btn-secondary btn-sm" onClick={cancelEdit}>
-                    <X size={14} /> Cancel
-                  </button>
-                  <button className="btn-primary btn-sm" onClick={saveEdit}>
-                    <Check size={14} /> Save
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={ex.id}
-              className="p-4 flex items-center gap-3 flex-wrap"
-            >
-              <div className="flex-1 min-w-[180px]">
-                <div className="font-semibold">{ex.name}</div>
-                <div className="text-xs text-txt-secondary mt-0.5 uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                  <span>{ex.mainMuscle}</span>
-                  {ex.subMuscles?.length > 0 && (
-                    <span className="text-txt-muted">
-                      · {ex.subMuscles.join(', ')}
-                    </span>
-                  )}
-                  <span
-                    className="text-[10px] tabular font-semibold px-1.5 py-0.5 rounded"
-                    style={{
-                      color: '#D4FF3A',
-                      background: '#D4FF3A14',
-                    }}
-                  >
-                    {ex.type}
-                  </span>
-                </div>
-              </div>
-              <button
-                className="btn-icon text-txt-secondary hover:text-brand-lime"
-                onClick={() => startEdit(ex)}
-                aria-label="Edit"
-              >
-                <Edit3 size={18} />
-              </button>
-              <button
-                className="btn-icon text-txt-muted hover:text-brand-red"
-                onClick={() => {
-                  if (
-                    confirm(
-                      `Delete "${ex.name}" from library? Existing logged sessions keep their data.`
-                    )
-                  ) {
-                    removeLibraryExercise(ex.id);
-                  }
-                }}
-                aria-label="Delete"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ClientRow({ client, onOpen }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(client.name);
-  const [signup, setSignup] = useState(toDateInput(client.signupDate));
-  const [exp, setExp] = useState(toDateInput(client.expiryDate));
-
-  const save = () => {
-    if (!name.trim()) return;
-    updateClient(client.id, {
-      name: name.trim(),
-      signupDate: signup ? new Date(signup).toISOString() : client.signupDate,
-      expiryDate: exp ? new Date(exp).toISOString() : null,
-    });
-    setEditing(false);
-  };
-
-  const cancel = () => {
-    setName(client.name);
-    setSignup(toDateInput(client.signupDate));
-    setExp(toDateInput(client.expiryDate));
-    setEditing(false);
-  };
-
-  if (editing) {
-    return (
-      <div className="p-4 space-y-3 bg-bg-elevated">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_180px] gap-3">
-          <input
-            className="input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-          />
-          <div>
-            <label className="section-title block mb-1">Signup</label>
-            <input
-              type="date"
-              className="input"
-              value={signup}
-              onChange={(e) => setSignup(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="section-title block mb-1">Expiry</label>
-            <input
-              type="date"
-              className="input"
-              value={exp}
-              onChange={(e) => setExp(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="text-xs text-txt-muted">
-            Height is locked at {client.height ? `${client.height} cm` : 'not set'}
-            .
-          </div>
-          <div className="flex gap-2">
-            <button className="btn-secondary btn-sm" onClick={cancel}>
-              <X size={14} /> Cancel
-            </button>
-            <button className="btn-primary btn-sm" onClick={save}>
-              <Check size={14} /> Save
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-4 flex items-center gap-4 flex-wrap">
-      <button
-        onClick={() => onOpen(client.id)}
-        className="flex-1 min-w-[200px] text-left"
-      >
-        <div className="font-semibold">{client.name}</div>
-        <div className="text-xs text-txt-secondary mt-0.5 flex items-center gap-3 flex-wrap">
-          <span>Signup {fmtDate(client.signupDate)}</span>
-          <span className="text-txt-muted">·</span>
-          <span>Expires {fmtDate(client.expiryDate)}</span>
-          {client.height && (
-            <>
-              <span className="text-txt-muted">·</span>
-              <span className="tabular">{client.height} cm</span>
-            </>
-          )}
-        </div>
-      </button>
-      <button
-        className="btn-icon text-txt-secondary hover:text-brand-lime"
-        onClick={() => setEditing(true)}
-        aria-label="Edit"
-      >
-        <Edit3 size={18} />
-      </button>
-      <button
-        className="btn-icon text-txt-muted hover:text-brand-red"
-        onClick={() => {
-          if (confirm(`Delete ${client.name}? This cannot be undone.`)) {
-            deleteClient(client.id);
-          }
-        }}
-        aria-label="Delete"
-      >
-        <Trash2 size={18} />
-      </button>
-    </div>
-  );
-}
-
-function ClientsTab({ onOpenClient }) {
-  const { clients } = useStore();
-  const [q, setQ] = useState('');
-
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return clients;
-    return clients.filter((c) => c.name.toLowerCase().includes(s));
-  }, [clients, q]);
-
-  return (
-    <div className="space-y-5">
-      <div className="relative">
-        <Search
-          size={18}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-txt-secondary"
-        />
-        <input
-          className="input pl-11"
-          placeholder="Search clients..."
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </div>
-      <div className="card divide-y divide-border">
-        {filtered.length === 0 ? (
-          <div className="p-8 text-center text-txt-secondary">
-            No clients match.
-          </div>
-        ) : (
-          filtered.map((c) => (
-            <ClientRow key={c.id} client={c} onOpen={onOpenClient} />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
+  exportClientWorkbook,
+  exportAllClientsWorkbook,
+} from '../lib/exportClient.js';
 
 const TABS = [
-  { key: 'exercises', label: 'Exercises', icon: Dumbbell },
-  { key: 'clients', label: 'Clients', icon: Users },
+  { key: 'account', label: 'Account', icon: UserIcon },
+  { key: 'export', label: 'Export', icon: Download },
 ];
 
-export default function SettingsView({ onBack, onOpenClient }) {
-  const [tab, setTab] = useState('exercises');
+function Banner({ kind, children, onDismiss }) {
+  const tones = {
+    info: { color: '#3ADBC7', bg: '#3ADBC714', border: '#3ADBC733' },
+    success: { color: '#3ADBC7', bg: '#3ADBC714', border: '#3ADBC733' },
+    error: { color: '#FF4D3A', bg: '#FF4D3A14', border: '#FF4D3A33' },
+    warn: { color: '#FF8A3A', bg: '#FF8A3A14', border: '#FF8A3A33' },
+  };
+  const t = tones[kind] || tones.info;
+  return (
+    <div
+      className="text-sm px-3 py-2 rounded-btn flex items-start gap-2"
+      style={{ color: t.color, background: t.bg, border: `1px solid ${t.border}` }}
+    >
+      <div className="flex-1">{children}</div>
+      {onDismiss && (
+        <button
+          onClick={onDismiss}
+          className="text-[11px] uppercase tracking-wider hover:underline"
+        >
+          Dismiss
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AccountTab() {
+  const [user, setUser] = useState(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [pw1, setPw1] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [busy, setBusy] = useState({});
+  const [msg, setMsg] = useState(null); // { kind, text }
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data?.user;
+      if (!u) return;
+      setUser(u);
+      setName(u.user_metadata?.full_name || u.user_metadata?.name || '');
+      setEmail(u.email || '');
+    });
+  }, []);
+
+  const saveName = async () => {
+    setBusy((b) => ({ ...b, name: true }));
+    setMsg(null);
+    const trimmed = name.trim();
+    const { error } = await supabase.auth.updateUser({
+      data: { full_name: trimmed },
+    });
+    setBusy((b) => ({ ...b, name: false }));
+    if (error) setMsg({ kind: 'error', text: error.message });
+    else setMsg({ kind: 'success', text: 'Name updated.' });
+  };
+
+  const saveEmail = async () => {
+    setBusy((b) => ({ ...b, email: true }));
+    setMsg(null);
+    const trimmed = email.trim();
+    const { error } = await supabase.auth.updateUser({ email: trimmed });
+    setBusy((b) => ({ ...b, email: false }));
+    if (error) setMsg({ kind: 'error', text: error.message });
+    else
+      setMsg({
+        kind: 'info',
+        text: 'Check your old and new inboxes — Supabase sends a confirmation link to both before switching.',
+      });
+  };
+
+  const savePassword = async () => {
+    setMsg(null);
+    if (pw1.length < 8) {
+      setMsg({ kind: 'error', text: 'Password must be at least 8 characters.' });
+      return;
+    }
+    if (pw1 !== pw2) {
+      setMsg({ kind: 'error', text: "Passwords don't match." });
+      return;
+    }
+    setBusy((b) => ({ ...b, pw: true }));
+    const { error } = await supabase.auth.updateUser({ password: pw1 });
+    setBusy((b) => ({ ...b, pw: false }));
+    if (error) setMsg({ kind: 'error', text: error.message });
+    else {
+      setPw1('');
+      setPw2('');
+      setMsg({ kind: 'success', text: 'Password updated.' });
+    }
+  };
+
+  const onSignOut = async () => {
+    setBusy((b) => ({ ...b, out: true }));
+    await supabase.auth.signOut();
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Identity card */}
+      <div className="card p-5 sm:p-6 flex items-center gap-4">
+        <div
+          className="rounded-full flex items-center justify-center font-display font-bold text-xl flex-shrink-0"
+          style={{
+            width: 64,
+            height: 64,
+            background: '#1C1C1F',
+            color: '#D4FF3A',
+            border: '1px solid #26262A',
+          }}
+        >
+          {initialsOf(name || email) || '·'}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-display font-bold tracking-tight text-xl truncate">
+            {name || (email ? email.split('@')[0] : 'Coach')}
+          </div>
+          <div className="text-xs text-txt-secondary truncate">{email}</div>
+        </div>
+      </div>
+
+      {msg && (
+        <Banner kind={msg.kind} onDismiss={() => setMsg(null)}>
+          {msg.text}
+        </Banner>
+      )}
+
+      {/* Display name */}
+      <div className="card p-5">
+        <div className="section-title mb-3 flex items-center gap-1.5">
+          <UserIcon size={12} /> Display name
+        </div>
+        <div className="text-xs text-txt-secondary mb-3">
+          Shown on the dashboard greeting ("Hey [name].") and used for the
+          avatar initials.
+        </div>
+        <div className="flex gap-2 items-end flex-wrap">
+          <input
+            className="input flex-1 min-w-[180px]"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+          />
+          <button
+            onClick={saveName}
+            disabled={busy.name || !name.trim()}
+            className="btn-primary btn-sm disabled:opacity-50"
+          >
+            <Save size={14} /> {busy.name ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+
+      {/* Email */}
+      <div className="card p-5">
+        <div className="section-title mb-3 flex items-center gap-1.5">
+          <Mail size={12} /> Email
+        </div>
+        <div className="text-xs text-txt-secondary mb-3">
+          Changing this sends confirmation links to both addresses before the
+          switch takes effect.
+        </div>
+        <div className="flex gap-2 items-end flex-wrap">
+          <input
+            type="email"
+            className="input flex-1 min-w-[180px]"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
+          <button
+            onClick={saveEmail}
+            disabled={
+              busy.email || !email.trim() || email.trim() === user?.email
+            }
+            className="btn-secondary btn-sm disabled:opacity-50"
+          >
+            <Save size={14} /> {busy.email ? 'Sending...' : 'Update'}
+          </button>
+        </div>
+      </div>
+
+      {/* Password */}
+      <div className="card p-5">
+        <div className="section-title mb-3 flex items-center gap-1.5">
+          <Lock size={12} /> Password
+        </div>
+        <div className="text-xs text-txt-secondary mb-3">
+          Minimum 8 characters. You'll stay signed in after changing it.
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input
+            type="password"
+            className="input"
+            value={pw1}
+            onChange={(e) => setPw1(e.target.value)}
+            placeholder="New password"
+            autoComplete="new-password"
+          />
+          <input
+            type="password"
+            className="input"
+            value={pw2}
+            onChange={(e) => setPw2(e.target.value)}
+            placeholder="Confirm new password"
+            autoComplete="new-password"
+          />
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button
+            onClick={savePassword}
+            disabled={busy.pw || !pw1 || !pw2}
+            className="btn-primary btn-sm disabled:opacity-50"
+          >
+            <Save size={14} /> {busy.pw ? 'Updating...' : 'Update password'}
+          </button>
+        </div>
+      </div>
+
+      {/* Sign out */}
+      <div className="card p-5">
+        <div className="section-title mb-3">Session</div>
+        <button
+          onClick={onSignOut}
+          disabled={busy.out}
+          className="btn-secondary disabled:opacity-50"
+        >
+          <LogOut size={18} /> {busy.out ? 'Signing out...' : 'Sign out'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ExportTab() {
+  const { clients } = useStore();
+  const [selected, setSelected] = useState(() => new Set());
+  const [busy, setBusy] = useState(false);
+
+  const toggle = (id) => {
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelected(new Set(clients.map((c) => c.id)));
+  const clearAll = () => setSelected(new Set());
+
+  const selectedClients = useMemo(
+    () => clients.filter((c) => selected.has(c.id)),
+    [clients, selected]
+  );
+
+  const totalSessions = useMemo(() => {
+    let n = 0;
+    for (const c of selectedClients) {
+      for (const w of c.weeks || []) {
+        for (const d of w.days) {
+          let total = 0;
+          let done = 0;
+          for (const k of ['warmUp', 'resistance', 'coolDown']) {
+            for (const ex of d.sections[k]) {
+              for (const s of ex.sets) {
+                total++;
+                if (s.completed) done++;
+              }
+            }
+          }
+          if (total > 0 && done >= total) n++;
+        }
+      }
+    }
+    return n;
+  }, [selectedClients]);
+
+  const exportSelected = async () => {
+    if (selectedClients.length === 0) return;
+    setBusy(true);
+    try {
+      if (selectedClients.length === 1) {
+        exportClientWorkbook(selectedClients[0]);
+      } else {
+        exportAllClientsWorkbook(selectedClients);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="card p-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div
+            className="flex-shrink-0 rounded-btn flex items-center justify-center"
+            style={{
+              width: 44,
+              height: 44,
+              background: '#D4FF3A14',
+              border: '1px solid #D4FF3A33',
+              color: '#D4FF3A',
+            }}
+          >
+            <FileSpreadsheet size={20} />
+          </div>
+          <div className="min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight">
+              Export to Excel
+            </div>
+            <div className="text-xs text-txt-secondary mt-0.5">
+              Generates an .xlsx file with a Summary sheet, full Workout
+              history (one row per set), Drop sets, and weight / body fat /
+              BMI metrics. Opens in Excel, Numbers, or Google Sheets.
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+          <div className="section-title">
+            Choose clients · {selected.size} of {clients.length} selected
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={selectAll}
+              className="h-8 px-3 rounded-pill text-[11px] uppercase tracking-wider font-semibold border border-border text-txt-secondary hover:text-txt-primary"
+            >
+              Select all
+            </button>
+            <button
+              onClick={clearAll}
+              className="h-8 px-3 rounded-pill text-[11px] uppercase tracking-wider font-semibold border border-border text-txt-secondary hover:text-txt-primary"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {clients.length === 0 ? (
+          <div className="text-center py-8 text-sm text-txt-muted">
+            No clients to export yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[320px] overflow-y-auto pr-1">
+            {clients.map((c) => {
+              const isOn = selected.has(c.id);
+              const phase = c.weeks?.[c.weeks.length - 1]?.phase;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => toggle(c.id)}
+                  className={cx(
+                    'flex items-center gap-3 p-2.5 rounded-btn border text-left transition-colors',
+                    isOn
+                      ? 'border-brand-lime bg-[rgba(212,255,58,0.06)]'
+                      : 'border-border hover:border-[#3a3a40]'
+                  )}
+                >
+                  <div
+                    className={cx(
+                      'flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border',
+                      isOn
+                        ? 'bg-brand-lime border-brand-lime'
+                        : 'border-border'
+                    )}
+                  >
+                    {isOn && <Check size={14} strokeWidth={3} color="#0A0A0B" />}
+                  </div>
+                  <div
+                    className="rounded-full flex items-center justify-center font-display font-bold text-[11px] flex-shrink-0"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      background: '#1C1C1F',
+                      color: '#D4FF3A',
+                      border: '1px solid #26262A',
+                    }}
+                  >
+                    {initialsOf(c.name) || '·'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold truncate">
+                      {c.name}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-txt-muted truncate">
+                      {phase || 'no phase'} · {c.weeks?.length || 0} wk
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-5 pt-5 border-t border-border flex items-center justify-between gap-2 flex-wrap">
+          <div className="text-xs text-txt-secondary">
+            {selected.size === 0 ? (
+              'Pick at least one client to enable export.'
+            ) : (
+              <>
+                <span className="tabular text-txt-primary font-semibold">
+                  {selected.size}
+                </span>{' '}
+                client{selected.size === 1 ? '' : 's'} ·{' '}
+                <span className="tabular text-txt-primary font-semibold">
+                  {totalSessions}
+                </span>{' '}
+                completed session{totalSessions === 1 ? '' : 's'} included
+              </>
+            )}
+          </div>
+          <button
+            onClick={exportSelected}
+            disabled={busy || selected.size === 0}
+            className="btn-primary btn-sm disabled:opacity-50"
+          >
+            <Download size={14} />
+            {busy
+              ? 'Building...'
+              : selected.size > 1
+              ? `Download .xlsx (${selected.size} clients)`
+              : 'Download .xlsx'}
+          </button>
+        </div>
+      </div>
+
+      <div className="card p-5">
+        <div className="section-title mb-2 flex items-center gap-1.5">
+          <AlertTriangle size={12} /> What's included
+        </div>
+        <ul className="text-xs text-txt-secondary space-y-1.5 list-disc pl-4">
+          <li>
+            <span className="text-txt-primary font-semibold">Summary</span> —
+            client identity, expiry, height, current phase, sessions logged,
+            total volume.
+          </li>
+          <li>
+            <span className="text-txt-primary font-semibold">Workouts</span> —
+            one row per set with week, day, section, exercise, weight, reps,
+            duration, completion flag, rest, and timer elapsed.
+          </li>
+          <li>
+            <span className="text-txt-primary font-semibold">Drop Sets</span> —
+            separate sheet listing every drop set tied to its parent set
+            (skipped if you have none).
+          </li>
+          <li>
+            <span className="text-txt-primary font-semibold">Metrics</span> —
+            weekly check-ins (weight, body fat %) with auto-computed BMI from
+            the client's current height.
+          </li>
+          <li>
+            Multi-client exports add a <span className="text-txt-primary font-semibold">Roster</span>{' '}
+            sheet up front and one workout sheet per client.
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsView({ onBack }) {
+  const [tab, setTab] = useState('account');
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20">
-        <div className="flex items-center justify-between mb-6">
-          <button className="btn-icon text-txt-secondary" onClick={onBack}>
-            <ArrowLeft size={22} />
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20 space-y-5">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="btn-icon text-txt-secondary hover:text-txt-primary"
+            aria-label="Back"
+          >
+            <ArrowLeft size={20} />
           </button>
           <div className="section-title">Settings</div>
           <div style={{ width: 44 }} />
         </div>
 
-        <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-6">
+        <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
           Settings
         </h1>
 
-        <div className="mb-6">
-          <div className="flex gap-2 bg-bg-surface border border-border rounded-btn p-1 max-w-md">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={cx(
-                    'flex-1 flex items-center justify-center gap-2 rounded-btn text-sm font-semibold',
-                    active
-                      ? 'bg-bg-elevated text-brand-lime'
-                      : 'text-txt-secondary'
-                  )}
-                  style={{ minHeight: 48 }}
-                >
-                  <Icon size={16} />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="card p-1 flex items-center gap-1 max-w-md">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const isActive = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={cx(
+                  'flex-1 h-11 px-4 rounded-btn text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors',
+                  isActive
+                    ? 'bg-brand-lime text-black'
+                    : 'text-txt-secondary hover:text-txt-primary'
+                )}
+              >
+                <Icon size={14} />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {tab === 'exercises' && <ExercisesTab />}
-        {tab === 'clients' && <ClientsTab onOpenClient={onOpenClient} />}
-
-        <div className="mt-10 pt-6 border-t border-border">
-          <button
-            className="btn-secondary"
-            onClick={() => supabase.auth.signOut()}
-          >
-            <LogOut size={18} /> Sign out
-          </button>
-        </div>
+        {tab === 'account' && <AccountTab />}
+        {tab === 'export' && <ExportTab />}
       </div>
     </div>
   );
