@@ -531,7 +531,10 @@ export default function DayView({
                     canMoveDown={idx < exercises.length - 1}
                   />
                   {section === 'resistance' && idx < exercises.length - 1 && (
-                    <BetweenExerciseRest dayId={dayId} />
+                    <BetweenExerciseRest
+                      dayId={dayId}
+                      defaultSeconds={ex.betweenRestSeconds || 120}
+                    />
                   )}
                 </div>
               ))}

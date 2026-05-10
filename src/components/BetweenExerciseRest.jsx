@@ -9,9 +9,9 @@ import {
 } from '../hooks/useTimers.js';
 import { fmtSeconds } from '../lib/utils.js';
 
-export default function BetweenExerciseRest({ dayId }) {
+export default function BetweenExerciseRest({ dayId, defaultSeconds = 120 }) {
   const key = `between:${dayId}`;
-  const [duration, setDuration] = useState(120);
+  const [duration, setDuration] = useState(defaultSeconds);
   useTimerStore();
   useRefresh(250);
   const { remaining, total, active } = getRestRemaining(key);

@@ -30,6 +30,7 @@ function makeRow(lib) {
     type: lib.type,
     restSeconds: 90,
     setCount: 3,
+    betweenRestSeconds: 120,
   };
 }
 
@@ -223,76 +224,103 @@ function SectionEditor({ sectionKey, label, Icon, rows, onChange, library }) {
 
       <div className="space-y-1.5">
         {rows.map((r, i) => (
-          <div
-            key={r.rowId}
-            className="flex items-center gap-2 p-2 rounded-btn border border-border"
-            style={{ background: '#141416' }}
-          >
-            <div className="w-6 text-[10px] tabular font-bold text-txt-muted text-center">
-              {i + 1}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold truncate">
-                {r.name}
-              </div>
-              <div className="text-[9px] uppercase tracking-wider text-txt-muted truncate">
-                {r.mainMuscle} · {r.type}
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="text-[8px] uppercase tracking-wider text-txt-muted">
-                Sets
-              </div>
-              <NumberStepper
-                value={r.setCount}
-                onChange={(v) => patch(r.rowId, { setCount: v })}
-                min={0}
-                max={20}
-              />
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="text-[8px] uppercase tracking-wider text-txt-muted">
-                Rest
-              </div>
-              <NumberStepper
-                value={r.restSeconds}
-                onChange={(v) => patch(r.rowId, { restSeconds: v })}
-                min={0}
-                max={600}
-                step={15}
-                suffix="s"
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <button
-                onClick={() => move(r.rowId, 'up')}
-                disabled={i === 0}
-                className="w-6 h-4 flex items-center justify-center text-txt-secondary hover:text-brand-lime disabled:opacity-25"
-                aria-label="Move up"
-              >
-                <ArrowUp size={10} />
-              </button>
-              <button
-                onClick={() => move(r.rowId, 'down')}
-                disabled={i === rows.length - 1}
-                className="w-6 h-4 flex items-center justify-center text-txt-secondary hover:text-brand-lime disabled:opacity-25"
-                aria-label="Move down"
-              >
-                <ArrowDown size={10} />
-              </button>
-            </div>
-
-            <button
-              onClick={() => remove(r.rowId)}
-              className="w-6 h-7 flex items-center justify-center text-txt-muted hover:text-brand-red"
-              aria-label="Remove exercise"
-              title="Remove"
+          <div key={r.rowId}>
+            <div
+              className="flex items-center gap-2 p-2 rounded-btn border border-border"
+              style={{ background: '#141416' }}
             >
-              <X size={14} />
-            </button>
+              <div className="w-6 text-[10px] tabular font-bold text-txt-muted text-center">
+                {i + 1}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-semibold truncate">
+                  {r.name}
+                </div>
+                <div className="text-[9px] uppercase tracking-wider text-txt-muted truncate">
+                  {r.mainMuscle} · {r.type}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="text-[8px] uppercase tracking-wider text-txt-muted">
+                  Sets
+                </div>
+                <NumberStepper
+                  value={r.setCount}
+                  onChange={(v) => patch(r.rowId, { setCount: v })}
+                  min={0}
+                  max={20}
+                />
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="text-[8px] uppercase tracking-wider text-txt-muted">
+                  Rest
+                </div>
+                <NumberStepper
+                  value={r.restSeconds}
+                  onChange={(v) => patch(r.rowId, { restSeconds: v })}
+                  min={0}
+                  max={600}
+                  step={15}
+                  suffix="s"
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <button
+                  onClick={() => move(r.rowId, 'up')}
+                  disabled={i === 0}
+                  className="w-6 h-4 flex items-center justify-center text-txt-secondary hover:text-brand-lime disabled:opacity-25"
+                  aria-label="Move up"
+                >
+                  <ArrowUp size={10} />
+                </button>
+                <button
+                  onClick={() => move(r.rowId, 'down')}
+                  disabled={i === rows.length - 1}
+                  className="w-6 h-4 flex items-center justify-center text-txt-secondary hover:text-brand-lime disabled:opacity-25"
+                  aria-label="Move down"
+                >
+                  <ArrowDown size={10} />
+                </button>
+              </div>
+
+              <button
+                onClick={() => remove(r.rowId)}
+                className="w-6 h-7 flex items-center justify-center text-txt-muted hover:text-brand-red"
+                aria-label="Remove exercise"
+                title="Remove"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {i < rows.length - 1 && (
+              <div className="flex items-center gap-2 pl-8 pr-2 py-1.5">
+                <div
+                  className="h-px flex-1"
+                  style={{ background: '#26262A' }}
+                />
+                <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-txt-muted">
+                  <span>Rest between</span>
+                  <NumberStepper
+                    value={r.betweenRestSeconds ?? 0}
+                    onChange={(v) =>
+                      patch(r.rowId, { betweenRestSeconds: v })
+                    }
+                    min={0}
+                    max={600}
+                    step={15}
+                    suffix="s"
+                  />
+                </div>
+                <div
+                  className="h-px flex-1"
+                  style={{ background: '#26262A' }}
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -323,6 +351,7 @@ function sectionsToRows(sections) {
       type: e.type,
       restSeconds: e.restSeconds ?? 90,
       setCount: e.setCount ?? 0,
+      betweenRestSeconds: e.betweenRestSeconds ?? 120,
     }));
   }
   return out;
@@ -339,6 +368,7 @@ function rowsToSections(rows) {
       type: r.type,
       restSeconds: r.restSeconds ?? 90,
       setCount: r.setCount ?? 0,
+      betweenRestSeconds: r.betweenRestSeconds ?? 120,
     }));
   }
   return out;

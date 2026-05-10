@@ -23,6 +23,7 @@ import {
   removeExercise,
   updateExercise,
   moveExercise,
+  flushSave,
 } from '../lib/store.js';
 import {
   cx,
@@ -93,10 +94,15 @@ function SetRow({
   };
 
   const stop = () => {
-    const secs = stopSet(set.id);
+    // Clamp to ≥1s so very rapid stops still register a value rather than
+    // falling through the truthy check below as "Start".
+    const secs = Math.max(1, stopSet(set.id));
     const p = { completed: true, elapsedSeconds: secs };
     if (timed) p.duration = secs;
     patch(p);
+    // Persist immediately — multiple rapid stops within the 400ms debounce
+    // window otherwise rely on the last-stop winning the save.
+    flushSave();
     startRest(`rest:${exercise.id}`, exercise.restSeconds || 90);
   };
 
@@ -129,7 +135,10 @@ function SetRow({
     />
   );
 
-  const toggleDone = () => patch({ completed: !set.completed });
+  const toggleDone = () => {
+    patch({ completed: !set.completed });
+    flushSave();
+  };
 
   const checkBtn = (
     <button
@@ -167,8 +176,10 @@ function SetRow({
       style={{ minWidth: 120 }}
     >
       <Play size={14} fill="currentColor" />
-      {set.completed && set.elapsedSeconds
-        ? fmtSeconds(set.elapsedSeconds)
+      {set.completed
+        ? set.elapsedSeconds != null && set.elapsedSeconds > 0
+          ? fmtSeconds(set.elapsedSeconds)
+          : 'Done'
         : 'Start'}
     </button>
   );

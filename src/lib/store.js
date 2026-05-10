@@ -251,6 +251,7 @@ export const captureDayAsPreset = (state, clientId, weekId, dayId) => {
     subMuscles: ex.subMuscles || [],
     type: ex.type,
     restSeconds: ex.restSeconds ?? 90,
+    betweenRestSeconds: ex.betweenRestSeconds ?? null,
     setCount: ex.sets?.length || 0,
   });
   return {
@@ -282,6 +283,7 @@ export const loadPresetIntoDay = (
     subMuscles: tpl.subMuscles || [],
     type: tpl.type,
     restSeconds: tpl.restSeconds ?? 90,
+    betweenRestSeconds: tpl.betweenRestSeconds ?? null,
     sets: Array.from({ length: tpl.setCount || 0 }, (_, i) => ({
       id: uid(),
       setNumber: i + 1,

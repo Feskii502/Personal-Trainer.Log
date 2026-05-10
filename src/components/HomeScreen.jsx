@@ -1142,12 +1142,14 @@ export default function HomeScreen({
             onAddSession={() => setOpenSchedule(true)}
             onOpenClient={onOpenClient}
           />
-          <Roster
-            clients={clients}
-            onOpenClient={onOpenClient}
-            onNewClient={() => setOpenNew(true)}
-          />
-          <WorkoutPresetsSection />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
+            <Roster
+              clients={clients}
+              onOpenClient={onOpenClient}
+              onNewClient={() => setOpenNew(true)}
+            />
+            <WorkoutPresetsSection />
+          </div>
           <ExerciseLibrary
             library={library}
             onOpenSettings={onOpenSettings}
