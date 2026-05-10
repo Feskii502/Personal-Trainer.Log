@@ -236,6 +236,83 @@ export const addExerciseToDay = (
   return ex.id;
 };
 
+// Capture a day's current exercises as a reusable preset template.
+// Strips client-specific runtime state (completion flags, elapsed time, weight,
+// reps, drop sets) so it lands clean in another client's day.
+export const captureDayAsPreset = (state, clientId, weekId, dayId) => {
+  const c = state.clients.find((x) => x.id === clientId);
+  const w = c?.weeks.find((x) => x.id === weekId);
+  const d = w?.days.find((x) => x.id === dayId);
+  if (!d) return null;
+  const blank = (ex) => ({
+    libraryId: ex.libraryId,
+    name: ex.name,
+    mainMuscle: ex.mainMuscle,
+    subMuscles: ex.subMuscles || [],
+    type: ex.type,
+    restSeconds: ex.restSeconds ?? 90,
+    setCount: ex.sets?.length || 0,
+  });
+  return {
+    sections: {
+      warmUp: d.sections.warmUp.map(blank),
+      resistance: d.sections.resistance.map(blank),
+      coolDown: d.sections.coolDown.map(blank),
+    },
+    suggestedTags: d.tags || [],
+  };
+};
+
+// Load a preset into a day. Modes:
+//   'replace' — wipe the day's existing exercises and replace with preset
+//   'append'  — keep existing exercises, add preset exercises after them
+// Set values (weight, reps, completed) start empty; coach fills during session.
+export const loadPresetIntoDay = (
+  clientId,
+  weekId,
+  dayId,
+  presetSections,
+  mode = 'replace'
+) => {
+  const buildExercise = (tpl) => ({
+    id: uid(),
+    libraryId: tpl.libraryId,
+    name: tpl.name,
+    mainMuscle: tpl.mainMuscle,
+    subMuscles: tpl.subMuscles || [],
+    type: tpl.type,
+    restSeconds: tpl.restSeconds ?? 90,
+    sets: Array.from({ length: tpl.setCount || 0 }, (_, i) => ({
+      id: uid(),
+      setNumber: i + 1,
+      weight: null,
+      reps: null,
+      duration: null,
+      completed: false,
+      elapsedSeconds: 0,
+      dropSets: [],
+    })),
+  });
+
+  update((s) =>
+    mapDay(s, clientId, weekId, dayId, (d) => {
+      const nextSection = (key) => {
+        const incoming = (presetSections[key] || []).map(buildExercise);
+        if (mode === 'append') return [...d.sections[key], ...incoming];
+        return incoming;
+      };
+      return {
+        ...d,
+        sections: {
+          warmUp: nextSection('warmUp'),
+          resistance: nextSection('resistance'),
+          coolDown: nextSection('coolDown'),
+        },
+      };
+    })
+  );
+};
+
 export const setExerciseOrder = (clientId, weekId, dayId, section, orderedIds) => {
   update((s) =>
     mapDay(s, clientId, weekId, dayId, (d) => {

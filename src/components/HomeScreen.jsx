@@ -6,10 +6,13 @@ import {
   Calendar,
   X,
   ChevronRight,
+  Bookmark,
+  Trash2,
 } from 'lucide-react';
 import { useStore } from '../lib/store.js';
 import { supabase } from '../lib/supabase.js';
 import { useSessions } from '../hooks/useSessions.js';
+import { useWorkoutPresets } from '../hooks/useWorkoutPresets.js';
 import {
   cx,
   daysUntil,
@@ -668,6 +671,169 @@ function Roster({ clients, onOpenClient, onNewClient }) {
   );
 }
 
+// ---------- Workout Presets ----------
+function presetTotals(p) {
+  const sec = p.sections || {};
+  let ex = 0;
+  let sets = 0;
+  for (const k of ['warmUp', 'resistance', 'coolDown']) {
+    for (const e of sec[k] || []) {
+      ex++;
+      sets += e.setCount || 0;
+    }
+  }
+  return { ex, sets };
+}
+
+function WorkoutPresetsSection() {
+  const { presets, loading, remove } = useWorkoutPresets();
+  const [q, setQ] = useState('');
+
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return presets;
+    return presets.filter(
+      (p) =>
+        p.name.toLowerCase().includes(s) ||
+        (p.description || '').toLowerCase().includes(s) ||
+        (p.tags || []).some((t) => t.toLowerCase().includes(s))
+    );
+  }, [presets, q]);
+
+  return (
+    <section className="card p-0">
+      <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border flex-wrap">
+        <div className="min-w-0">
+          <div className="font-display text-xl font-semibold tracking-tight">
+            Workout Presets
+          </div>
+          <SectionTitle>
+            {filtered.length} of {presets.length} saved
+          </SectionTitle>
+        </div>
+        <div className="text-[11px] text-txt-muted">
+          Save a day's structure once, drop it into any client.
+        </div>
+      </div>
+
+      <div
+        className="px-5 py-3 border-b border-border"
+        style={{ background: 'rgba(15,15,17,0.4)' }}
+      >
+        <div className="relative">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-secondary"
+          />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search presets…"
+            className="w-full bg-bg-base border border-border rounded-btn h-10 pl-9 pr-3 text-[13px] outline-none focus:border-brand-lime"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="p-8 text-center text-xs text-txt-muted">
+          Loading presets…
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="p-8 text-center">
+          {presets.length === 0 ? (
+            <>
+              <Bookmark
+                size={28}
+                className="mx-auto text-txt-muted mb-2"
+                strokeWidth={1.5}
+              />
+              <div className="text-sm font-semibold mb-1">No presets yet</div>
+              <div className="text-xs text-txt-secondary max-w-md mx-auto">
+                Open any client's day, build the workout you want, then tap{' '}
+                <span className="text-brand-lime font-semibold">Save preset</span>{' '}
+                to reuse the same structure with another client.
+              </div>
+            </>
+          ) : (
+            <div className="text-xs text-txt-muted">No presets match.</div>
+          )}
+        </div>
+      ) : (
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-px"
+          style={{ background: '#1C1C1F' }}
+        >
+          {filtered.map((p) => {
+            const totals = presetTotals(p);
+            return (
+              <div
+                key={p.id}
+                className="group p-4 hover:bg-[#16161A] transition-colors flex flex-col gap-2"
+                style={{ background: '#141416' }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-[14px] truncate">
+                      {p.name || 'Untitled'}
+                    </div>
+                    {p.description && (
+                      <div className="text-[11px] text-txt-secondary mt-0.5 line-clamp-2">
+                        {p.description}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Delete preset "${p.name}"?`)) remove(p.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-txt-muted hover:text-brand-red"
+                    aria-label="Delete preset"
+                    title="Delete preset"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                {p.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {p.tags.slice(0, 4).map((t) => (
+                      <span
+                        key={t}
+                        className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded text-brand-lime"
+                        style={{ background: '#D4FF3A14' }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                    {p.tags.length > 4 && (
+                      <span className="text-[9px] text-txt-muted tabular">
+                        +{p.tags.length - 4}
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-3 text-[11px] tabular text-txt-secondary mt-auto pt-1">
+                  <span>
+                    <span className="text-txt-primary font-semibold">
+                      {totals.ex}
+                    </span>{' '}
+                    ex
+                  </span>
+                  <span>
+                    <span className="text-txt-primary font-semibold">
+                      {totals.sets}
+                    </span>{' '}
+                    sets
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ---------- Exercise Library ----------
 function ExerciseLibrary({ library, onOpenSettings }) {
   const [q, setQ] = useState('');
@@ -932,6 +1098,7 @@ export default function HomeScreen({
             onOpenClient={onOpenClient}
             onNewClient={() => setOpenNew(true)}
           />
+          <WorkoutPresetsSection />
           <ExerciseLibrary
             library={library}
             onOpenSettings={onOpenSettings}

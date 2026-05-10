@@ -8,6 +8,8 @@ import {
   Search,
   X,
   GripVertical,
+  BookmarkPlus,
+  FolderOpen,
 } from 'lucide-react';
 import {
   useStore,
@@ -34,6 +36,9 @@ import AddExerciseModal from './AddExerciseModal.jsx';
 import ExerciseBlock from './ExerciseBlock.jsx';
 import BetweenExerciseRest from './BetweenExerciseRest.jsx';
 import ReorderExercisesModal from './ReorderExercisesModal.jsx';
+import SavePresetModal from './SavePresetModal.jsx';
+import LoadPresetModal from './LoadPresetModal.jsx';
+import { useWorkoutPresets } from '../hooks/useWorkoutPresets.js';
 
 const SECTIONS = [
   { key: 'warmUp', label: 'Warm Up', icon: Flame },
@@ -314,6 +319,9 @@ export default function DayView({
   const [picker, setPicker] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [reorderOpen, setReorderOpen] = useState(false);
+  const [savePresetOpen, setSavePresetOpen] = useState(false);
+  const [loadPresetOpen, setLoadPresetOpen] = useState(false);
+  const { add: addPreset } = useWorkoutPresets();
 
   if (!day) {
     return (
@@ -432,7 +440,26 @@ export default function DayView({
               {exercises.length} exercise
               {exercises.length === 1 ? '' : 's'} · {sectionLabel}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setLoadPresetOpen(true)}
+                className="h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 border border-border text-txt-secondary hover:text-txt-primary hover:border-[#3a3a40]"
+                title="Load a saved workout preset into this day"
+              >
+                <FolderOpen size={14} /> Load preset
+              </button>
+              <button
+                onClick={() => setSavePresetOpen(true)}
+                disabled={
+                  day.sections.warmUp.length === 0 &&
+                  day.sections.resistance.length === 0 &&
+                  day.sections.coolDown.length === 0
+                }
+                className="h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 border border-border text-txt-secondary hover:text-txt-primary hover:border-[#3a3a40] disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Save this day's exercises as a reusable preset"
+              >
+                <BookmarkPlus size={14} /> Save preset
+              </button>
               {exercises.length > 1 && (
                 <button
                   onClick={() => setReorderOpen(true)}
@@ -521,6 +548,25 @@ export default function DayView({
         dayId={dayId}
         section={section}
         exercises={exercises}
+      />
+
+      <SavePresetModal
+        open={savePresetOpen}
+        onClose={() => setSavePresetOpen(false)}
+        clientId={clientId}
+        weekId={weekId}
+        dayId={dayId}
+        onSave={async (preset) => {
+          await addPreset(preset);
+        }}
+      />
+
+      <LoadPresetModal
+        open={loadPresetOpen}
+        onClose={() => setLoadPresetOpen(false)}
+        clientId={clientId}
+        weekId={weekId}
+        dayId={dayId}
       />
 
       <AddExerciseModal

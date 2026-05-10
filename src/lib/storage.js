@@ -225,6 +225,89 @@ export const deleteSession = async (id) => {
   if (error) console.error('deleteSession error:', error);
 };
 
+// ---------- Workout Presets ----------
+
+const presetRowToObj = (row) => ({
+  id: row.id,
+  name: row.name || '',
+  description: row.description || '',
+  tags: row.tags || [],
+  sections: row.data?.sections || { warmUp: [], resistance: [], coolDown: [] },
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+export const fetchPresets = async () => {
+  const { data: user } = await supabase.auth.getUser();
+  const userId = user?.user?.id;
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from('workout_presets')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('fetchPresets error:', error);
+    return [];
+  }
+  return (data || []).map(presetRowToObj);
+};
+
+export const createPreset = async (preset) => {
+  const { data: user } = await supabase.auth.getUser();
+  const userId = user?.user?.id;
+  if (!userId) return null;
+  const row = {
+    id: preset.id,
+    user_id: userId,
+    name: preset.name ?? '',
+    description: preset.description ?? '',
+    tags: preset.tags || [],
+    data: { sections: preset.sections || { warmUp: [], resistance: [], coolDown: [] } },
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('workout_presets').insert(row);
+  if (error) console.error('createPreset error:', error);
+  return preset.id;
+};
+
+export const updatePresetRow = async (id, patch) => {
+  const row = { updated_at: new Date().toISOString() };
+  if (patch.name !== undefined) row.name = patch.name;
+  if (patch.description !== undefined) row.description = patch.description;
+  if (patch.tags !== undefined) row.tags = patch.tags;
+  if (patch.sections !== undefined) row.data = { sections: patch.sections };
+  const { error } = await supabase
+    .from('workout_presets')
+    .update(row)
+    .eq('id', id);
+  if (error) console.error('updatePresetRow error:', error);
+};
+
+export const deletePreset = async (id) => {
+  const { error } = await supabase.from('workout_presets').delete().eq('id', id);
+  if (error) console.error('deletePreset error:', error);
+};
+
+export const subscribeToPresets = (userId, onChange) => {
+  const channel = supabase
+    .channel(`workout_presets:${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'workout_presets',
+        filter: `user_id=eq.${userId}`,
+      },
+      onChange
+    )
+    .subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
 // Subscribe to remote changes on both tables for this user. Any event triggers
 // a full refetch + onChange(nextState). Returns an unsubscribe fn.
 export const subscribeToUserState = (userId, onChange) => {
