@@ -21,6 +21,7 @@ import {
 } from '../lib/utils.js';
 import NewClientModal from './NewClientModal.jsx';
 import ScheduleSessionModal from './ScheduleSessionModal.jsx';
+import PresetEditorModal from './PresetEditorModal.jsx';
 import Logo from './ui/Logo.jsx';
 
 // ---------- helpers ----------
@@ -686,8 +687,10 @@ function presetTotals(p) {
 }
 
 function WorkoutPresetsSection() {
-  const { presets, loading, remove } = useWorkoutPresets();
+  const { presets, loading, add, patch, remove } = useWorkoutPresets();
   const [q, setQ] = useState('');
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -700,6 +703,32 @@ function WorkoutPresetsSection() {
     );
   }, [presets, q]);
 
+  const startNew = () => {
+    setEditing(null);
+    setEditorOpen(true);
+  };
+  const startEdit = (p) => {
+    setEditing(p);
+    setEditorOpen(true);
+  };
+  const handleSave = async (data) => {
+    if (data.id) {
+      await patch(data.id, {
+        name: data.name,
+        description: data.description,
+        tags: data.tags,
+        sections: data.sections,
+      });
+    } else {
+      await add({
+        name: data.name,
+        description: data.description,
+        tags: data.tags,
+        sections: data.sections,
+      });
+    }
+  };
+
   return (
     <section className="card p-0">
       <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border flex-wrap">
@@ -711,9 +740,13 @@ function WorkoutPresetsSection() {
             {filtered.length} of {presets.length} saved
           </SectionTitle>
         </div>
-        <div className="text-[11px] text-txt-muted">
-          Save a day's structure once, drop it into any client.
-        </div>
+        <button
+          onClick={startNew}
+          className="h-9 px-3 rounded-btn text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5"
+          style={{ background: '#D4FF3A', color: '#0A0A0B' }}
+        >
+          <Plus size={14} /> Manage · New preset
+        </button>
       </div>
 
       <div
@@ -748,11 +781,18 @@ function WorkoutPresetsSection() {
                 strokeWidth={1.5}
               />
               <div className="text-sm font-semibold mb-1">No presets yet</div>
-              <div className="text-xs text-txt-secondary max-w-md mx-auto">
-                Open any client's day, build the workout you want, then tap{' '}
+              <div className="text-xs text-txt-secondary max-w-md mx-auto mb-4">
+                Build one from scratch using the button above, or open any
+                client's day and tap{' '}
                 <span className="text-brand-lime font-semibold">Save preset</span>{' '}
-                to reuse the same structure with another client.
+                to capture the structure you've just laid out.
               </div>
+              <button
+                onClick={startNew}
+                className="btn-primary btn-sm inline-flex"
+              >
+                <Plus size={14} /> Create your first preset
+              </button>
             </>
           ) : (
             <div className="text-xs text-txt-muted">No presets match.</div>
@@ -766,14 +806,15 @@ function WorkoutPresetsSection() {
           {filtered.map((p) => {
             const totals = presetTotals(p);
             return (
-              <div
+              <button
                 key={p.id}
-                className="group p-4 hover:bg-[#16161A] transition-colors flex flex-col gap-2"
+                onClick={() => startEdit(p)}
+                className="group p-4 hover:bg-[#16161A] transition-colors flex flex-col gap-2 text-left"
                 style={{ background: '#141416' }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-[14px] truncate">
+                    <div className="font-semibold text-[14px] truncate group-hover:text-brand-lime transition-colors">
                       {p.name || 'Untitled'}
                     </div>
                     {p.description && (
@@ -783,7 +824,8 @@ function WorkoutPresetsSection() {
                     )}
                   </div>
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (confirm(`Delete preset "${p.name}"?`)) remove(p.id);
                     }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity text-txt-muted hover:text-brand-red"
@@ -825,11 +867,18 @@ function WorkoutPresetsSection() {
                     sets
                   </span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
       )}
+
+      <PresetEditorModal
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        preset={editing}
+        onSave={handleSave}
+      />
     </section>
   );
 }
