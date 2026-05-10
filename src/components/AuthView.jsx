@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LogIn, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 import { cx } from '../lib/utils.js';
+import Logo from './ui/Logo.jsx';
 
 export default function AuthView() {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
@@ -66,11 +67,25 @@ export default function AuthView() {
         onSubmit={submit}
         className="card p-6 sm:p-8 w-full max-w-[420px] flex flex-col gap-5"
       >
-        <div>
-          <div className="section-title mb-1">Fitats</div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            {isSignup ? 'Create your account' : 'Sign in'}
-          </h1>
+        <div className="flex items-center gap-3">
+          <div
+            className="flex items-center justify-center flex-shrink-0"
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              background: '#0A0A0B',
+              border: '1px solid #26262A',
+            }}
+          >
+            <Logo size={32} />
+          </div>
+          <div>
+            <div className="section-title mb-1">Fitats</div>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
+              {isSignup ? 'Create your account' : 'Sign in'}
+            </h1>
+          </div>
         </div>
 
         <div className="flex items-center bg-bg-elevated/60 border border-border rounded-btn p-1">

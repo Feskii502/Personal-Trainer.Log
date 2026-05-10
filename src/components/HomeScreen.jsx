@@ -18,6 +18,7 @@ import {
 } from '../lib/utils.js';
 import NewClientModal from './NewClientModal.jsx';
 import ScheduleSessionModal from './ScheduleSessionModal.jsx';
+import Logo from './ui/Logo.jsx';
 
 // ---------- helpers ----------
 const PACKAGE_SIZE = 10;
@@ -153,12 +154,7 @@ function Topbar({ now, onOpenSettings, onSignOut, userEmail, userName }) {
             border: '1px solid #26262A',
           }}
         >
-          <div
-            className="font-display font-bold tracking-tight"
-            style={{ color: '#D4FF3A', fontSize: 22, lineHeight: 1 }}
-          >
-            F<span style={{ color: '#F5F5F7' }}>·</span>
-          </div>
+          <Logo size={28} />
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-txt-muted">

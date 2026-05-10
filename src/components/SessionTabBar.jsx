@@ -1,5 +1,6 @@
 import { ArrowLeft, Plus, X, Home } from 'lucide-react';
 import { cx, initialsOf, phaseColor } from '../lib/utils.js';
+import Logo from './ui/Logo.jsx';
 
 // Persistent top bar showing all active client sessions, like browser tabs.
 // Always visible across views once at least one session has been opened.
@@ -47,9 +48,7 @@ export default function SessionTabBar({
               border: '1px solid #26262A',
             }}
           >
-            <span className="font-display font-bold text-[13px] tracking-tight">
-              <span className="text-brand-lime">F</span>·
-            </span>
+            <Logo size={20} />
           </div>
           <div className="hidden sm:block text-left">
             <div className="text-[9px] uppercase tracking-[0.2em] text-txt-muted leading-none">
