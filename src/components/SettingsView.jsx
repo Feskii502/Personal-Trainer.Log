@@ -7,17 +7,14 @@ import {
   Save,
   Mail,
   Lock,
-  Check,
+  ChevronRight,
   FileSpreadsheet,
-  AlertTriangle,
+  Search,
 } from 'lucide-react';
 import { useStore } from '../lib/store.js';
 import { supabase } from '../lib/supabase.js';
-import { cx, initialsOf, daysUntil } from '../lib/utils.js';
-import {
-  exportClientWorkbook,
-  exportAllClientsWorkbook,
-} from '../lib/exportClient.js';
+import { cx, initialsOf, phaseColor } from '../lib/utils.js';
+import ExportClientModal from './ExportClientModal.jsx';
 
 const TABS = [
   { key: 'account', label: 'Account', icon: UserIcon },
@@ -261,61 +258,14 @@ function AccountTab() {
 
 function ExportTab() {
   const { clients } = useStore();
-  const [selected, setSelected] = useState(() => new Set());
-  const [busy, setBusy] = useState(false);
+  const [activeClient, setActiveClient] = useState(null);
+  const [q, setQ] = useState('');
 
-  const toggle = (id) => {
-    setSelected((cur) => {
-      const next = new Set(cur);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const selectAll = () => setSelected(new Set(clients.map((c) => c.id)));
-  const clearAll = () => setSelected(new Set());
-
-  const selectedClients = useMemo(
-    () => clients.filter((c) => selected.has(c.id)),
-    [clients, selected]
-  );
-
-  const totalSessions = useMemo(() => {
-    let n = 0;
-    for (const c of selectedClients) {
-      for (const w of c.weeks || []) {
-        for (const d of w.days) {
-          let total = 0;
-          let done = 0;
-          for (const k of ['warmUp', 'resistance', 'coolDown']) {
-            for (const ex of d.sections[k]) {
-              for (const s of ex.sets) {
-                total++;
-                if (s.completed) done++;
-              }
-            }
-          }
-          if (total > 0 && done >= total) n++;
-        }
-      }
-    }
-    return n;
-  }, [selectedClients]);
-
-  const exportSelected = async () => {
-    if (selectedClients.length === 0) return;
-    setBusy(true);
-    try {
-      if (selectedClients.length === 1) {
-        exportClientWorkbook(selectedClients[0]);
-      } else {
-        exportAllClientsWorkbook(selectedClients);
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return clients;
+    return clients.filter((c) => c.name.toLowerCase().includes(s));
+  }, [clients, q]);
 
   return (
     <div className="space-y-5">
@@ -338,152 +288,94 @@ function ExportTab() {
               Export to Excel
             </div>
             <div className="text-xs text-txt-secondary mt-0.5">
-              Generates an .xlsx file with a Summary sheet, full Workout
-              history (one row per set), Drop sets, and weight / body fat /
-              BMI metrics. Opens in Excel, Numbers, or Google Sheets.
+              Pick a client below, choose which weeks to include, and download
+              an .xlsx with a Summary sheet, one sheet per week (exercises,
+              sets, reps and time side-by-side), and a Metrics sheet.
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-          <div className="section-title">
-            Choose clients · {selected.size} of {clients.length} selected
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={selectAll}
-              className="h-8 px-3 rounded-pill text-[11px] uppercase tracking-wider font-semibold border border-border text-txt-secondary hover:text-txt-primary"
-            >
-              Select all
-            </button>
-            <button
-              onClick={clearAll}
-              className="h-8 px-3 rounded-pill text-[11px] uppercase tracking-wider font-semibold border border-border text-txt-secondary hover:text-txt-primary"
-            >
-              Clear
-            </button>
-          </div>
+        <div className="relative mb-3">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-secondary"
+          />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search clients…"
+            className="w-full bg-bg-base border border-border rounded-btn h-10 pl-9 pr-3 text-[13px] outline-none focus:border-brand-lime"
+          />
         </div>
 
         {clients.length === 0 ? (
           <div className="text-center py-8 text-sm text-txt-muted">
-            No clients to export yet.
+            No clients yet — add one from the dashboard to enable exports.
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-8 text-xs text-txt-muted">
+            No clients match.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[320px] overflow-y-auto pr-1">
-            {clients.map((c) => {
-              const isOn = selected.has(c.id);
+          <div className="space-y-1">
+            {filtered.map((c) => {
               const phase = c.weeks?.[c.weeks.length - 1]?.phase;
+              const phaseHex = phaseColor(phase);
               return (
                 <button
                   key={c.id}
-                  onClick={() => toggle(c.id)}
-                  className={cx(
-                    'flex items-center gap-3 p-2.5 rounded-btn border text-left transition-colors',
-                    isOn
-                      ? 'border-brand-lime bg-[rgba(212,255,58,0.06)]'
-                      : 'border-border hover:border-[#3a3a40]'
-                  )}
+                  onClick={() => setActiveClient(c)}
+                  className="group w-full flex items-center gap-3 p-3 rounded-btn border border-border hover:border-[#3a3a40] hover:bg-[#16161A] transition-colors text-left"
                 >
                   <div
-                    className={cx(
-                      'flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border',
-                      isOn
-                        ? 'bg-brand-lime border-brand-lime'
-                        : 'border-border'
-                    )}
-                  >
-                    {isOn && <Check size={14} strokeWidth={3} color="#0A0A0B" />}
-                  </div>
-                  <div
-                    className="rounded-full flex items-center justify-center font-display font-bold text-[11px] flex-shrink-0"
+                    className="rounded-full flex items-center justify-center font-display font-bold text-sm flex-shrink-0 relative"
                     style={{
-                      width: 28,
-                      height: 28,
+                      width: 38,
+                      height: 38,
                       background: '#1C1C1F',
                       color: '#D4FF3A',
                       border: '1px solid #26262A',
                     }}
                   >
                     {initialsOf(c.name) || '·'}
+                    {phase && (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 rounded-full"
+                        style={{
+                          width: 11,
+                          height: 11,
+                          background: phaseHex,
+                          border: '2px solid #141416',
+                        }}
+                      />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold truncate">
                       {c.name}
                     </div>
                     <div className="text-[10px] uppercase tracking-wider text-txt-muted truncate">
-                      {phase || 'no phase'} · {c.weeks?.length || 0} wk
+                      {phase || 'no phase'} ·{' '}
+                      {c.weeks?.length || 0} wk logged
                     </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-txt-secondary group-hover:text-brand-lime flex-shrink-0">
+                    <Download size={14} />
+                    <span className="hidden sm:inline">Export</span>
+                    <ChevronRight size={14} />
                   </div>
                 </button>
               );
             })}
           </div>
         )}
-
-        <div className="mt-5 pt-5 border-t border-border flex items-center justify-between gap-2 flex-wrap">
-          <div className="text-xs text-txt-secondary">
-            {selected.size === 0 ? (
-              'Pick at least one client to enable export.'
-            ) : (
-              <>
-                <span className="tabular text-txt-primary font-semibold">
-                  {selected.size}
-                </span>{' '}
-                client{selected.size === 1 ? '' : 's'} ·{' '}
-                <span className="tabular text-txt-primary font-semibold">
-                  {totalSessions}
-                </span>{' '}
-                completed session{totalSessions === 1 ? '' : 's'} included
-              </>
-            )}
-          </div>
-          <button
-            onClick={exportSelected}
-            disabled={busy || selected.size === 0}
-            className="btn-primary btn-sm disabled:opacity-50"
-          >
-            <Download size={14} />
-            {busy
-              ? 'Building...'
-              : selected.size > 1
-              ? `Download .xlsx (${selected.size} clients)`
-              : 'Download .xlsx'}
-          </button>
-        </div>
       </div>
 
-      <div className="card p-5">
-        <div className="section-title mb-2 flex items-center gap-1.5">
-          <AlertTriangle size={12} /> What's included
-        </div>
-        <ul className="text-xs text-txt-secondary space-y-1.5 list-disc pl-4">
-          <li>
-            <span className="text-txt-primary font-semibold">Summary</span> —
-            client identity, expiry, height, current phase, sessions logged,
-            total volume.
-          </li>
-          <li>
-            <span className="text-txt-primary font-semibold">Workouts</span> —
-            one row per set with week, day, section, exercise, weight, reps,
-            duration, completion flag, rest, and timer elapsed.
-          </li>
-          <li>
-            <span className="text-txt-primary font-semibold">Drop Sets</span> —
-            separate sheet listing every drop set tied to its parent set
-            (skipped if you have none).
-          </li>
-          <li>
-            <span className="text-txt-primary font-semibold">Metrics</span> —
-            weekly check-ins (weight, body fat %) with auto-computed BMI from
-            the client's current height.
-          </li>
-          <li>
-            Multi-client exports add a <span className="text-txt-primary font-semibold">Roster</span>{' '}
-            sheet up front and one workout sheet per client.
-          </li>
-        </ul>
-      </div>
+      <ExportClientModal
+        open={!!activeClient}
+        onClose={() => setActiveClient(null)}
+        client={activeClient}
+      />
     </div>
   );
 }
