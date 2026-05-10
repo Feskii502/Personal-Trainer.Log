@@ -30,11 +30,18 @@ export default function AuthView() {
         setError('Please enter your name.');
         return;
       }
+      const redirectTo =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}${
+              import.meta.env.BASE_URL || '/'
+            }`.replace(/\/+$/, '/')
+          : undefined;
       const { data, error: err } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
           data: { full_name: trimmedName },
+          emailRedirectTo: redirectTo,
         },
       });
       if (err) {
