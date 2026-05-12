@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search, Plus, ArrowLeft } from 'lucide-react';
 import Modal from './ui/Modal.jsx';
 import {
@@ -8,7 +8,7 @@ import {
 } from '../lib/store.js';
 import { MUSCLE_GROUPS, EXERCISE_TYPES, cx } from '../lib/utils.js';
 
-function CreateExerciseForm({ onDone, onCancel }) {
+function CreateExerciseForm({ onDone, onCancel, hideBack }) {
   const [name, setName] = useState('');
   const [main, setMain] = useState(MUSCLE_GROUPS[0]);
   const [subs, setSubs] = useState([]);
@@ -30,12 +30,14 @@ function CreateExerciseForm({ onDone, onCancel }) {
 
   return (
     <div className="space-y-5">
-      <button
-        className="text-txt-secondary text-sm inline-flex items-center gap-1.5"
-        onClick={onCancel}
-      >
-        <ArrowLeft size={14} /> Back to library
-      </button>
+      {!hideBack && (
+        <button
+          className="text-txt-secondary text-sm inline-flex items-center gap-1.5"
+          onClick={onCancel}
+        >
+          <ArrowLeft size={14} /> Back to library
+        </button>
+      )}
       <div>
         <label className="section-title block mb-2">Exercise Name</label>
         <input
@@ -123,11 +125,17 @@ export default function AddExerciseModal({
   weekId,
   dayId,
   section,
+  startInCreate = false,
+  libraryOnly = false, // no day binding — saves to library only
 }) {
   const { library } = useStore();
   const [q, setQ] = useState('');
   const [muscle, setMuscle] = useState(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(startInCreate || libraryOnly);
+
+  useEffect(() => {
+    if (open) setCreating(startInCreate || libraryOnly);
+  }, [open, startInCreate, libraryOnly]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -139,11 +147,13 @@ export default function AddExerciseModal({
   }, [library, q, muscle]);
 
   const add = (ex) => {
-    addExerciseToDay(clientId, weekId, dayId, section, ex);
+    if (!libraryOnly && clientId) {
+      addExerciseToDay(clientId, weekId, dayId, section, ex);
+    }
     onClose?.();
     setQ('');
     setMuscle(null);
-    setCreating(false);
+    setCreating(startInCreate || libraryOnly);
   };
 
   return (
@@ -151,14 +161,24 @@ export default function AddExerciseModal({
       open={open}
       onClose={() => {
         onClose();
-        setCreating(false);
+        setCreating(startInCreate || libraryOnly);
       }}
-      title={creating ? 'New Exercise' : 'Add Exercise'}
+      title={
+        libraryOnly
+          ? 'New Library Exercise'
+          : creating
+          ? 'New Exercise'
+          : 'Add Exercise'
+      }
     >
       {creating ? (
         <CreateExerciseForm
           onDone={(ex) => add(ex)}
-          onCancel={() => setCreating(false)}
+          onCancel={() => {
+            if (libraryOnly) onClose();
+            else setCreating(false);
+          }}
+          hideBack={libraryOnly}
         />
       ) : (
         <div className="space-y-5">
@@ -175,9 +195,9 @@ export default function AddExerciseModal({
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+          <div className="flex flex-wrap gap-2">
             <button
-              className={cx('chip shrink-0', !muscle && 'chip-active')}
+              className={cx('chip', !muscle && 'chip-active')}
               onClick={() => setMuscle(null)}
             >
               All
@@ -185,7 +205,7 @@ export default function AddExerciseModal({
             {MUSCLE_GROUPS.map((m) => (
               <button
                 key={m}
-                className={cx('chip shrink-0', muscle === m && 'chip-active')}
+                className={cx('chip', muscle === m && 'chip-active')}
                 onClick={() => setMuscle(m === muscle ? null : m)}
               >
                 {m}

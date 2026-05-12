@@ -99,13 +99,22 @@ const update = (fn) => {
 };
 
 // ---------- Clients ----------
-export const addClient = ({ name, signupDate, expiryDate, height }) => {
+export const addClient = ({
+  name,
+  signupDate,
+  expiryDate,
+  height,
+  sessionsRemaining,
+  sessionsPackage,
+}) => {
   const client = {
     id: uid(),
     name,
     signupDate: signupDate || new Date().toISOString(),
     expiryDate: expiryDate || null,
     height: height ?? null,
+    sessionsRemaining: sessionsRemaining ?? null,
+    sessionsPackage: sessionsPackage ?? 10,
     trainingNotes: '',
     dietNotes: '',
     weeks: [],
@@ -113,6 +122,37 @@ export const addClient = ({ name, signupDate, expiryDate, height }) => {
   };
   update((s) => ({ ...s, clients: [...s.clients, client] }));
   return client.id;
+};
+
+// Mark a day complete and decrement the client's remaining session count.
+// Coach hits this at the end of a workout; clamps at 0.
+export const completeSession = (clientId, weekId, dayId) => {
+  update((s) => ({
+    ...s,
+    clients: s.clients.map((c) => {
+      if (c.id !== clientId) return c;
+      const currentRem =
+        typeof c.sessionsRemaining === 'number' ? c.sessionsRemaining : null;
+      const nextRem =
+        currentRem != null ? Math.max(0, currentRem - 1) : currentRem;
+      return {
+        ...c,
+        sessionsRemaining: nextRem,
+        weeks: c.weeks.map((w) =>
+          w.id !== weekId
+            ? w
+            : {
+                ...w,
+                days: w.days.map((d) =>
+                  d.id !== dayId
+                    ? d
+                    : { ...d, completed: true, completedAt: new Date().toISOString() }
+                ),
+              }
+        ),
+      };
+    }),
+  }));
 };
 
 export const updateClient = (id, patch) => {

@@ -67,14 +67,18 @@ function clientStats(client) {
       }
     }
   }
-  const remainingInCycle =
-    PACKAGE_SIZE - (sessionsLogged % PACKAGE_SIZE);
+  const pkg = client.sessionsPackage ?? PACKAGE_SIZE;
+  const sessionsLeft =
+    typeof client.sessionsRemaining === 'number'
+      ? Math.max(0, client.sessionsRemaining)
+      : pkg - (sessionsLogged % pkg);
   return {
     sessionsLogged,
     totalSets,
     completedSets,
     totalVolume,
-    sessionsLeft: remainingInCycle,
+    sessionsLeft,
+    packageSize: pkg,
   };
 }
 
@@ -97,6 +101,55 @@ function Chip({ children, color = '#8A8A90' }) {
     >
       {children}
     </span>
+  );
+}
+
+function EditableSessionsLeft({ client, stats }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(stats.sessionsLeft));
+  useEffect(() => setVal(String(stats.sessionsLeft)), [stats.sessionsLeft]);
+  const commit = () => {
+    const n = Math.max(0, Number(val) || 0);
+    updateClient(client.id, { sessionsRemaining: n });
+    setEditing(false);
+  };
+  const remainingColor =
+    stats.sessionsLeft <= 2
+      ? '#FF4D3A'
+      : stats.sessionsLeft <= 4
+      ? '#FF8A3A'
+      : '#D4FF3A';
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        inputMode="numeric"
+        min="0"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') {
+            setVal(String(stats.sessionsLeft));
+            setEditing(false);
+          }
+        }}
+        className="bg-transparent outline-none border-b border-brand-lime font-display tabular font-bold text-2xl w-14 text-center"
+        style={{ color: remainingColor }}
+      />
+    );
+  }
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      className="font-display tabular font-bold text-2xl leading-none hover:opacity-80 transition-opacity"
+      style={{ color: remainingColor }}
+      title="Edit sessions remaining"
+    >
+      {stats.sessionsLeft}
+    </button>
   );
 }
 
@@ -148,7 +201,8 @@ function HeaderCard({ client, stats, onDelete }) {
   const du = daysUntil(client.expiryDate);
   const expired = du < 0;
   const expiring = du >= 0 && du <= 30;
-  const remainingPct = (stats.sessionsLeft / PACKAGE_SIZE) * 100;
+  const pkgSize = stats.packageSize ?? PACKAGE_SIZE;
+  const remainingPct = (stats.sessionsLeft / pkgSize) * 100;
   const remainingColor =
     stats.sessionsLeft <= 2
       ? '#FF4D3A'
@@ -258,14 +312,9 @@ function HeaderCard({ client, stats, onDelete }) {
             Sessions left
           </div>
           <div className="flex items-baseline gap-1 mt-0.5">
-            <span
-              className="font-display tabular font-bold text-2xl"
-              style={{ color: remainingColor }}
-            >
-              {stats.sessionsLeft}
-            </span>
+            <EditableSessionsLeft client={client} stats={stats} />
             <span className="text-[11px] tabular text-txt-muted">
-              / {PACKAGE_SIZE}
+              / {pkgSize}
             </span>
           </div>
           <div

@@ -10,6 +10,8 @@ import {
   ChevronRight,
   FileSpreadsheet,
   Search,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useStore } from '../lib/store.js';
 import { supabase } from '../lib/supabase.js';
@@ -241,6 +243,9 @@ function AccountTab() {
         </div>
       </div>
 
+      {/* Appearance */}
+      <ThemeCard />
+
       {/* Sign out */}
       <div className="card p-5">
         <div className="section-title mb-3">Session</div>
@@ -251,6 +256,59 @@ function AccountTab() {
         >
           <LogOut size={18} /> {busy.out ? 'Signing out...' : 'Sign out'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function ThemeCard() {
+  const [theme, setTheme] = useState(
+    () => document.documentElement.dataset.theme || 'dark'
+  );
+  const apply = (t) => {
+    setTheme(t);
+    if (t === 'light') {
+      document.documentElement.dataset.theme = 'light';
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+    try {
+      localStorage.setItem('fitats:theme', t);
+    } catch {
+      /* ignore */
+    }
+  };
+  return (
+    <div className="card p-5">
+      <div className="section-title mb-3">Appearance</div>
+      <div className="text-xs text-txt-secondary mb-3">
+        Switches the main surface and text colors. Some brand-accented surfaces
+        (phase ribbons, the lime accent, gradients) are intentionally the same
+        in both modes.
+      </div>
+      <div className="flex items-center bg-bg-elevated/60 border border-border rounded-btn p-1 max-w-xs">
+        {[
+          { k: 'dark', label: 'Dark', icon: Moon },
+          { k: 'light', label: 'Light', icon: Sun },
+        ].map((opt) => {
+          const Icon = opt.icon;
+          const active = theme === opt.k;
+          return (
+            <button
+              key={opt.k}
+              onClick={() => apply(opt.k)}
+              className={cx(
+                'flex-1 h-10 rounded-btn text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors',
+                active
+                  ? 'bg-brand-lime text-black'
+                  : 'text-txt-secondary hover:text-txt-primary'
+              )}
+            >
+              <Icon size={14} />
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

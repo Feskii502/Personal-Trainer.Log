@@ -5,12 +5,12 @@ export default {
     extend: {
       colors: {
         bg: {
-          base: '#0A0A0B',
-          surface: '#141416',
-          elevated: '#1C1C1F',
+          base: 'var(--c-bg-base)',
+          surface: 'var(--c-bg-surface)',
+          elevated: 'var(--c-bg-elevated)',
         },
         border: {
-          DEFAULT: '#26262A',
+          DEFAULT: 'var(--c-border)',
         },
         brand: {
           lime: '#D4FF3A',
@@ -23,9 +23,9 @@ export default {
           power: '#FF8A3A',
         },
         txt: {
-          primary: '#F5F5F7',
-          secondary: '#8A8A90',
-          muted: '#555559',
+          primary: 'var(--c-txt-primary)',
+          secondary: 'var(--c-txt-secondary)',
+          muted: 'var(--c-txt-muted)',
         },
       },
       fontFamily: {
@@ -36,7 +36,7 @@ export default {
         'tabular-nums': 'tabular-nums',
       },
       borderRadius: {
-        card: '14px',
+        card: '16px',
         btn: '10px',
         pill: '22px',
       },

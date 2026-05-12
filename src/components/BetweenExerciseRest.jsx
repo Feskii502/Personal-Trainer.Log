@@ -20,71 +20,79 @@ export default function BetweenExerciseRest({ dayId, defaultSeconds = 120 }) {
     const pct = total > 0 ? (remaining / total) * 100 : 0;
     return (
       <div
-        className="rounded-card p-5 relative overflow-hidden"
+        className="rounded-full relative overflow-hidden flex items-center gap-3 p-1.5 pr-3"
         style={{
-          background: '#FF8A3A0D',
-          border: '1px solid #FF8A3A33',
+          background: 'rgba(255,138,58,0.06)',
+          border: '1px solid rgba(255,138,58,0.35)',
         }}
       >
         <div
           className="absolute left-0 top-0 bottom-0"
           style={{
-            background: '#FF8A3A22',
+            background: 'rgba(255,138,58,0.14)',
             width: `${pct}%`,
             transition: 'width 250ms linear',
           }}
         />
-        <div className="relative flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <Timer size={22} style={{ color: '#FF8A3A' }} />
-            <div>
-              <div
-                className="section-title"
-                style={{ color: '#FF8A3A' }}
-              >
-                Between Exercises
-              </div>
-              <div
-                className="font-display font-bold tabular leading-none mt-1"
-                style={{ fontSize: 44, color: '#FF8A3A' }}
-              >
-                {fmtSeconds(remaining)}
-              </div>
-            </div>
-          </div>
-          <button className="btn-secondary" onClick={() => stopRest(key)}>
-            <Square size={16} /> Skip
-          </button>
+        <div
+          className="relative w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background: '#FF8A3A14', color: '#FF8A3A' }}
+        >
+          <Timer size={16} />
         </div>
+        <div className="relative flex-1 min-w-0">
+          <div
+            className="text-[9px] uppercase tracking-[0.22em] font-semibold"
+            style={{ color: '#FF8A3A' }}
+          >
+            Between exercises
+          </div>
+          <div
+            className="font-display font-semibold tabular text-[16px] leading-tight"
+            style={{ color: '#FF8A3A' }}
+          >
+            {fmtSeconds(remaining)}
+          </div>
+        </div>
+        <button
+          onClick={() => stopRest(key)}
+          className="relative h-9 px-3 rounded-full text-[11px] font-semibold uppercase tracking-wider text-txt-secondary hover:text-txt-primary border border-border bg-bg-base/40 flex items-center gap-1.5 flex-shrink-0"
+        >
+          <Square size={11} fill="currentColor" /> Skip
+        </button>
       </div>
     );
   }
 
   return (
     <div
-      className="rounded-card p-4 flex items-center gap-3 flex-wrap"
+      className="rounded-full flex items-center gap-2 px-3 py-1.5 flex-wrap"
       style={{
-        background: '#141416',
+        background: 'rgba(20,20,22,0.4)',
         border: '1px dashed #26262A',
       }}
     >
-      <Timer size={18} className="text-txt-secondary" />
-      <span className="section-title">Between-Exercise Rest</span>
+      <Timer size={14} className="text-txt-muted" />
+      <span className="text-[10px] uppercase tracking-[0.22em] font-semibold text-txt-muted">
+        Between rest
+      </span>
       <input
         type="number"
         inputMode="numeric"
-        className="input tabular text-center"
-        style={{ width: 90, minHeight: 40, padding: '4px 10px' }}
+        className="bg-bg-base border border-border rounded-full tabular text-center text-[12px] text-txt-primary"
+        style={{ width: 64, height: 30, padding: '0 8px' }}
         value={duration}
         onChange={(e) => setDuration(Math.max(0, Number(e.target.value) || 0))}
+        aria-label="Between-exercise rest seconds"
       />
-      <span className="text-xs text-txt-muted">sec</span>
+      <span className="text-[10px] text-txt-muted">sec</span>
       <button
-        className="btn-sm tabular border border-brand-lime text-brand-lime bg-transparent rounded-btn ml-auto"
-        style={{ minHeight: 40, padding: '0 14px' }}
-        onClick={() => startRest(key, duration)}
+        onClick={() =>
+          startRest(key, duration, { kind: 'between' })
+        }
+        className="ml-auto h-8 px-3 rounded-full text-[11px] font-semibold uppercase tracking-wider border border-brand-lime/60 text-brand-lime hover:bg-brand-lime/[0.06] flex items-center gap-1.5"
       >
-        <Play size={14} fill="currentColor" /> Start
+        <Play size={11} fill="currentColor" /> Start
       </button>
     </div>
   );

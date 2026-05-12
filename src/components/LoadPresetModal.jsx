@@ -28,7 +28,6 @@ export default function LoadPresetModal({
   const { presets, loading } = useWorkoutPresets();
   const [pickedId, setPickedId] = useState(null);
   const [q, setQ] = useState('');
-  const [mode, setMode] = useState('replace');
   const [busy, setBusy] = useState(false);
 
   const filtered = useMemo(() => {
@@ -46,7 +45,7 @@ export default function LoadPresetModal({
     const p = presets.find((x) => x.id === pickedId);
     if (!p) return;
     setBusy(true);
-    loadPresetIntoDay(clientId, weekId, dayId, p.sections, mode);
+    loadPresetIntoDay(clientId, weekId, dayId, p.sections, 'replace');
     setBusy(false);
     setPickedId(null);
     onClose();
@@ -68,35 +67,16 @@ export default function LoadPresetModal({
             disabled={!pickedId || busy}
             className="btn-primary btn-sm disabled:opacity-50"
           >
-            {busy ? 'Applying…' : mode === 'replace' ? 'Replace day' : 'Append to day'}
+            {busy ? 'Applying…' : 'Load preset'}
           </button>
         </>
       }
     >
       <div className="space-y-4">
-        <div className="flex items-center bg-bg-elevated/60 border border-border rounded-btn p-1">
-          {[
-            { k: 'replace', label: 'Replace existing' },
-            { k: 'append', label: 'Append to existing' },
-          ].map((opt) => (
-            <button
-              key={opt.k}
-              onClick={() => setMode(opt.k)}
-              className={cx(
-                'flex-1 h-9 rounded-btn text-[11px] font-semibold uppercase tracking-wider transition-colors',
-                mode === opt.k
-                  ? 'bg-brand-lime text-black'
-                  : 'text-txt-secondary hover:text-txt-primary'
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
         <div className="text-[11px] text-txt-muted">
-          {mode === 'replace'
-            ? "Wipes the day's current exercises before loading. Useful when starting fresh."
-            : "Keeps the day's current exercises and adds the preset's after them. Useful for stacking."}
+          Pick a preset and the current day's exercises will be replaced
+          with the preset's structure. Sets start empty so you can log them
+          live during the session.
         </div>
 
         <div className="relative">

@@ -31,8 +31,8 @@ export const getSetElapsed = (id) => {
 };
 export const isSetRunning = (id) => !!state.sets[id];
 
-export const startRest = (id, duration) => {
-  state.rests[id] = { startedAt: Date.now(), duration };
+export const startRest = (id, duration, meta = {}) => {
+  state.rests[id] = { startedAt: Date.now(), duration, ...meta };
   emit();
 };
 export const stopRest = (id) => {
@@ -55,7 +55,15 @@ export const getActiveRest = () => {
     const remaining = r.duration - (Date.now() - r.startedAt) / 1000;
     if (remaining <= 0) continue;
     if (!best || r.startedAt > best.startedAt) {
-      best = { id, startedAt: r.startedAt, remaining, total: r.duration };
+      best = {
+        id,
+        startedAt: r.startedAt,
+        remaining,
+        total: r.duration,
+        nextSet: r.nextSet,
+        exerciseName: r.exerciseName,
+        kind: r.kind,
+      };
     }
   }
   return best;

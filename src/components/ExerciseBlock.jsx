@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Play,
   Square,
   Plus,
   Trash2,
-  ChevronDown,
-  ChevronUp,
   TrendingUp,
   X,
-  Timer,
+  ChevronUp,
+  ChevronDown,
+  Check,
   ArrowUp,
   ArrowDown,
-  Check,
 } from 'lucide-react';
 import {
   addSet,
@@ -30,6 +29,8 @@ import {
   fmtSeconds,
   isTimed,
   hasWeight,
+  previousSetsFor,
+  fmtPrevSet,
 } from '../lib/utils.js';
 import {
   startSet,
@@ -38,29 +39,34 @@ import {
   getSetElapsed,
   startRest,
   stopRest,
-  getRestRemaining,
   useTimerStore,
   useRefresh,
 } from '../hooks/useTimers.js';
-import RestRing from './ui/RestRing.jsx';
 import HistoryPanel from './HistoryPanel.jsx';
 
-function NumInput({ value, onChange, placeholder, suffix }) {
+// ---------- Number input (text+decimal, scroll-safe) ----------
+function NumInput({ value, onChange, placeholder, suffix, ariaLabel }) {
   return (
     <div className="relative">
       <input
+        type="text"
         inputMode="decimal"
-        type="number"
-        className="input-num"
+        pattern="[0-9]*\.?[0-9]*"
+        autoComplete="off"
+        aria-label={ariaLabel}
+        className="w-full bg-bg-base border border-border rounded-btn h-11 px-3 pr-7 text-[14px] tabular font-semibold outline-none focus:border-brand-lime text-txt-primary placeholder:text-txt-muted/60"
         value={value ?? ''}
         placeholder={placeholder}
         onChange={(e) => {
-          const v = e.target.value;
-          onChange(v === '' ? null : Number(v));
+          const raw = e.target.value;
+          if (raw === '') return onChange(null);
+          if (!/^\d*\.?\d*$/.test(raw)) return;
+          if (raw === '.' || raw.endsWith('.')) return onChange(Number(raw) || 0);
+          onChange(Number(raw));
         }}
       />
       {suffix && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-txt-muted tabular">
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-txt-muted tabular pointer-events-none">
           {suffix}
         </span>
       )}
@@ -68,6 +74,7 @@ function NumInput({ value, onChange, placeholder, suffix }) {
   );
 }
 
+// ---------- Set row ----------
 function SetRow({
   clientId,
   weekId,
@@ -75,7 +82,9 @@ function SetRow({
   section,
   exercise,
   set,
-  prevTimerId,
+  isLastSet,
+  isLastExercise,
+  prev, // previous-session value for this set number
 }) {
   const timed = isTimed(exercise.type);
   const weighted = hasWeight(exercise.type);
@@ -84,6 +93,10 @@ function SetRow({
 
   const running = isSetRunning(set.id);
   const elapsed = getSetElapsed(set.id);
+  const prevText = useMemo(
+    () => fmtPrevSet(prev, exercise.type),
+    [prev, exercise.type]
+  );
 
   const patch = (p) =>
     updateSet(clientId, weekId, dayId, section, exercise.id, set.id, p);
@@ -94,20 +107,53 @@ function SetRow({
   };
 
   const stop = () => {
-    // Clamp to ≥1s so very rapid stops still register a value rather than
-    // falling through the truthy check below as "Start".
     const secs = Math.max(1, stopSet(set.id));
     const p = { completed: true, elapsedSeconds: secs };
     if (timed) p.duration = secs;
     patch(p);
-    // Persist immediately — multiple rapid stops within the 400ms debounce
-    // window otherwise rely on the last-stop winning the save.
     flushSave();
-    startRest(`rest:${exercise.id}`, exercise.restSeconds || 90);
+
+    if (isLastSet) {
+      if (!isLastExercise) {
+        const betweenSeconds = exercise.betweenRestSeconds ?? 120;
+        if (betweenSeconds > 0) {
+          startRest(`between:${dayId}`, betweenSeconds, {
+            kind: 'between',
+            exerciseName: exercise.name,
+          });
+        }
+      }
+    } else {
+      startRest(`rest:${exercise.id}`, exercise.restSeconds || 90, {
+        kind: 'set',
+        exerciseName: exercise.name,
+        nextSet: set.setNumber + 1,
+      });
+    }
+  };
+
+  const toggleDone = () => {
+    patch({ completed: !set.completed });
+    flushSave();
   };
 
   const remove = () =>
     removeSet(clientId, weekId, dayId, section, exercise.id, set.id);
+
+  const setIdxBlock = (
+    <div className="flex flex-col items-start gap-0.5 min-w-[68px]">
+      <div className="font-display tabular font-bold text-[15px] leading-none text-txt-secondary">
+        #{set.setNumber}
+      </div>
+      {prevText ? (
+        <div className="text-[9px] tabular text-txt-muted leading-none uppercase tracking-[0.06em] whitespace-nowrap">
+          prev {prevText}
+        </div>
+      ) : (
+        <div className="text-[9px] text-txt-muted leading-none">—</div>
+      )}
+    </div>
+  );
 
   const weightInput = weighted ? (
     <NumInput
@@ -115,6 +161,7 @@ function SetRow({
       placeholder="kg"
       suffix={exercise.type === '-kg' ? '-kg' : 'kg'}
       onChange={(v) => patch({ weight: v })}
+      ariaLabel="Weight"
     />
   ) : (
     <div />
@@ -126,56 +173,33 @@ function SetRow({
       placeholder="sec"
       suffix="s"
       onChange={(v) => patch({ duration: v })}
+      ariaLabel="Duration"
     />
   ) : (
     <NumInput
       value={set.reps}
       placeholder="reps"
       onChange={(v) => patch({ reps: v })}
+      ariaLabel="Reps"
     />
-  );
-
-  const toggleDone = () => {
-    patch({ completed: !set.completed });
-    flushSave();
-  };
-
-  const checkBtn = (
-    <button
-      onClick={toggleDone}
-      aria-label={set.completed ? 'Mark set incomplete' : 'Mark set complete'}
-      title={set.completed ? 'Mark incomplete' : 'Mark complete'}
-      className="inline-flex items-center justify-center rounded-btn transition-colors flex-shrink-0"
-      style={{
-        width: 44,
-        height: 44,
-        background: set.completed ? '#D4FF3A' : 'transparent',
-        border: set.completed
-          ? '1px solid #D4FF3A'
-          : '1px solid #3a3a40',
-        color: set.completed ? '#0A0A0B' : '#8A8A90',
-      }}
-    >
-      <Check size={18} strokeWidth={3} />
-    </button>
   );
 
   const timerBtn = running ? (
     <button
       onClick={stop}
-      className="btn-danger btn-sm tabular w-full sm:w-auto"
-      style={{ minWidth: 120 }}
+      className="h-11 px-3 rounded-btn flex items-center justify-center gap-2 font-display font-bold tabular text-[14px] bg-brand-red text-black w-full sm:w-auto"
+      style={{ minWidth: 110 }}
     >
-      <Square size={14} fill="currentColor" />
+      <Square size={12} fill="currentColor" />
       {fmtSeconds(elapsed)}
     </button>
   ) : (
     <button
       onClick={start}
-      className="btn-sm tabular border border-brand-lime text-brand-lime bg-transparent w-full sm:w-auto"
-      style={{ minWidth: 120 }}
+      className="h-11 px-3 rounded-btn flex items-center justify-center gap-2 font-display font-semibold tabular text-[13px] border border-brand-lime/60 text-brand-lime bg-transparent hover:bg-brand-lime/[0.06] w-full sm:w-auto"
+      style={{ minWidth: 110 }}
     >
-      <Play size={14} fill="currentColor" />
+      <Play size={11} fill="currentColor" />
       {set.completed
         ? set.elapsedSeconds != null && set.elapsedSeconds > 0
           ? fmtSeconds(set.elapsedSeconds)
@@ -184,23 +208,38 @@ function SetRow({
     </button>
   );
 
-  return (
-    <div
-      className={cx(
-        'rounded-btn transition-colors',
-        running && 'animate-pulse-lime'
-      )}
+  const checkBtn = (
+    <button
+      onClick={toggleDone}
+      aria-label={set.completed ? 'Mark set incomplete' : 'Mark set complete'}
+      title={set.completed ? 'Mark incomplete' : 'Mark complete'}
+      className="inline-flex items-center justify-center rounded-full transition-colors flex-shrink-0"
       style={{
-        background: running ? '#D4FF3A0A' : set.setNumber % 2 ? '#141416' : '#17171A',
-        border: running ? '1px solid #D4FF3A' : '1px solid #26262A',
+        width: 36,
+        height: 36,
+        background: set.completed ? '#3ADBC714' : 'transparent',
+        border: set.completed ? '1px solid #3ADBC766' : '1px solid #3a3a40',
+        color: set.completed ? '#3ADBC7' : '#8A8A90',
       }}
     >
-      {/* Phone: two-row stacked layout. sm+ : original single-row 6-col grid. */}
-      <div className="p-3 sm:hidden space-y-2">
-        <div className="grid items-center gap-2" style={{ gridTemplateColumns: '44px 1fr 1fr' }}>
-          <div className="tabular font-display font-bold text-lg text-txt-secondary">
-            #{set.setNumber}
-          </div>
+      <Check size={16} strokeWidth={3} />
+    </button>
+  );
+
+  return (
+    <div
+      className={cx('rounded-btn transition-colors px-2 py-2')}
+      style={{
+        background: running ? 'rgba(212,255,58,0.05)' : 'transparent',
+      }}
+    >
+      {/* Phone: stacked */}
+      <div className="sm:hidden space-y-2">
+        <div
+          className="grid items-center gap-2"
+          style={{ gridTemplateColumns: '68px 1fr 1fr' }}
+        >
+          {setIdxBlock}
           {weightInput}
           {repsInput}
         </div>
@@ -211,59 +250,57 @@ function SetRow({
             onClick={() =>
               addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
             }
-            className="btn-icon text-txt-secondary hover:text-brand-lime"
-            aria-label="Add drop set"
-          >
-            <ChevronDown size={18} />
-          </button>
-          <button
-            onClick={remove}
-            className="btn-icon text-txt-muted hover:text-brand-red"
-            aria-label="Remove set"
-          >
-            <X size={18} />
-          </button>
-        </div>
-      </div>
-
-      <div
-        className="hidden sm:grid items-center gap-2 p-3"
-        style={{
-          gridTemplateColumns:
-            'minmax(44px,56px) minmax(90px,1fr) minmax(90px,1fr) minmax(160px,auto) auto auto auto',
-        }}
-      >
-        <div className="tabular font-display font-bold text-lg text-txt-secondary pl-2">
-          #{set.setNumber}
-        </div>
-        {weightInput}
-        {repsInput}
-        <div className="flex items-center gap-2">
-          {timerBtn}
-          <button
-            onClick={() =>
-              addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
-            }
-            className="btn-icon text-txt-secondary hover:text-brand-lime"
+            className="w-9 h-9 inline-flex items-center justify-center rounded-full border border-border text-txt-secondary hover:text-brand-lime hover:border-brand-lime"
             aria-label="Add drop set"
             title="Add drop set"
           >
-            <ChevronDown size={18} />
+            <ChevronDown size={14} />
+          </button>
+          <button
+            onClick={remove}
+            className="w-9 h-9 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
+            aria-label="Remove set"
+          >
+            <X size={14} />
           </button>
         </div>
+      </div>
+
+      {/* Desktop: grid */}
+      <div
+        className="hidden sm:grid items-center gap-2"
+        style={{
+          gridTemplateColumns:
+            '76px minmax(90px,1fr) minmax(90px,1fr) auto auto auto auto',
+        }}
+      >
+        {setIdxBlock}
+        {weightInput}
+        {repsInput}
+        {timerBtn}
         {checkBtn}
-        <div />
+        <button
+          onClick={() =>
+            addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
+          }
+          className="w-9 h-9 inline-flex items-center justify-center rounded-full border border-border text-txt-secondary hover:text-brand-lime hover:border-brand-lime"
+          aria-label="Add drop set"
+          title="Add drop set"
+        >
+          <ChevronDown size={14} />
+        </button>
         <button
           onClick={remove}
-          className="btn-icon text-txt-muted hover:text-brand-red"
+          className="w-9 h-9 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
           aria-label="Remove set"
         >
-          <X size={18} />
+          <X size={14} />
         </button>
       </div>
 
+      {/* Drop sets */}
       {set.dropSets?.length > 0 && (
-        <div className="px-3 pb-3 sm:pl-10 space-y-2">
+        <div className="mt-2 pl-[76px] space-y-1.5">
           {set.dropSets.map((ds) => (
             <div
               key={ds.id}
@@ -272,7 +309,7 @@ function SetRow({
                 gridTemplateColumns: 'auto minmax(0,1fr) minmax(0,1fr) auto',
               }}
             >
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-txt-muted">
+              <span className="text-[9px] uppercase tracking-wider font-semibold text-txt-muted">
                 Drop
               </span>
               {weighted ? (
@@ -313,7 +350,7 @@ function SetRow({
                 }
               />
               <button
-                className="btn-icon text-txt-muted hover:text-brand-red"
+                className="w-8 h-8 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
                 onClick={() =>
                   removeDropSet(
                     clientId,
@@ -327,7 +364,7 @@ function SetRow({
                 }
                 aria-label="Remove drop set"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             </div>
           ))}
@@ -337,38 +374,7 @@ function SetRow({
   );
 }
 
-function RestCountdown({ exerciseId }) {
-  useTimerStore();
-  useRefresh(250);
-  const { remaining, total, active } = getRestRemaining(`rest:${exerciseId}`);
-  if (!active) return null;
-  return (
-    <div
-      className="flex items-center gap-4 p-4 rounded-btn"
-      style={{
-        background: '#D4FF3A0A',
-        border: '1px solid #D4FF3A33',
-      }}
-    >
-      <RestRing remaining={remaining} total={total} size={100} stroke={8} />
-      <div className="flex-1">
-        <div className="section-title" style={{ color: '#D4FF3A' }}>
-          Resting
-        </div>
-        <div className="text-sm text-txt-secondary tabular mt-1">
-          Next set in {fmtSeconds(remaining)}
-        </div>
-      </div>
-      <button
-        className="btn-secondary btn-sm"
-        onClick={() => stopRest(`rest:${exerciseId}`)}
-      >
-        Skip
-      </button>
-    </div>
-  );
-}
-
+// ---------- ExerciseBlock ----------
 export default function ExerciseBlock({
   client,
   weekId,
@@ -377,113 +383,133 @@ export default function ExerciseBlock({
   exercise,
   canMoveUp,
   canMoveDown,
+  isLastExercise = false,
+  idx = 0,
 }) {
   const [showHistory, setShowHistory] = useState(false);
-  const weighted = hasWeight(exercise.type);
-  const timed = isTimed(exercise.type);
+
+  const completed = exercise.sets.filter((s) => s.completed).length;
+  const total = exercise.sets.length;
+  const pct = total > 0 ? (completed / total) * 100 : 0;
+  const allDone = total > 0 && completed === total;
+
+  const prevByNumber = useMemo(
+    () => previousSetsFor(client, exercise.libraryId, dayId),
+    [client, exercise.libraryId, dayId]
+  );
 
   return (
     <div className="card overflow-hidden">
-      <div className="p-5 flex items-start justify-between gap-4 border-b border-border">
-        <div className="min-w-0">
-          <div className="font-display text-lg md:text-xl font-semibold tracking-tight truncate">
-            {exercise.name}
-          </div>
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span className="text-xs text-txt-secondary uppercase tracking-wide">
-              {exercise.mainMuscle}
-            </span>
-            {exercise.subMuscles?.length > 0 && (
-              <span className="text-xs text-txt-muted">
-                · {exercise.subMuscles.join(', ')}
-              </span>
-            )}
-            <span
-              className="text-[10px] tabular font-semibold uppercase px-1.5 py-0.5 rounded"
-              style={{
-                color: '#D4FF3A',
-                background: '#D4FF3A14',
-              }}
-            >
+      {/* Header */}
+      <div className="px-5 py-4 flex items-center gap-4 border-b border-border flex-wrap">
+        <div className="font-display tabular font-semibold text-txt-muted text-[14px] w-7 flex-shrink-0">
+          {String(idx + 1).padStart(2, '0')}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="font-display font-semibold text-[16px] tracking-tight truncate">
+              {exercise.name}
+            </div>
+            <span className="text-[9px] tabular font-semibold uppercase px-2 py-0.5 rounded-full border border-border text-txt-secondary">
               {exercise.type}
             </span>
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center rounded-btn border border-border overflow-hidden">
-            <button
-              onClick={() =>
-                moveExercise(client.id, weekId, dayId, section, exercise.id, 'up')
-              }
-              disabled={!canMoveUp}
-              className="btn-icon text-txt-secondary disabled:text-txt-muted/50 disabled:cursor-not-allowed"
-              aria-label="Move up"
-              title="Move up"
-            >
-              <ArrowUp size={18} />
-            </button>
-            <div className="w-px h-6 bg-border" />
-            <button
-              onClick={() =>
-                moveExercise(client.id, weekId, dayId, section, exercise.id, 'down')
-              }
-              disabled={!canMoveDown}
-              className="btn-icon text-txt-secondary disabled:text-txt-muted/50 disabled:cursor-not-allowed"
-              aria-label="Move down"
-              title="Move down"
-            >
-              <ArrowDown size={18} />
-            </button>
+          <div className="text-[11px] text-txt-secondary mt-1">
+            <span className="font-semibold text-txt-primary uppercase tracking-wide">
+              {exercise.mainMuscle}
+            </span>
+            {exercise.subMuscles?.length > 0 && (
+              <span className="text-txt-muted">
+                {' '}· {exercise.subMuscles.join(', ')}
+              </span>
+            )}
           </div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <div
+            className="font-display tabular font-semibold text-[15px] leading-none"
+            style={{ color: allDone ? '#3ADBC7' : '#F5F5F7' }}
+          >
+            {completed}
+            <span className="text-txt-muted text-[12px]">/{total}</span>
+          </div>
+          <div className="text-[9px] uppercase tracking-wider text-txt-muted mt-1">
+            Sets
+          </div>
+        </div>
+
+        {/* Inline reorder + history + remove buttons */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() =>
+              moveExercise(client.id, weekId, dayId, section, exercise.id, 'up')
+            }
+            disabled={!canMoveUp}
+            className="w-8 h-8 inline-flex items-center justify-center rounded-full text-txt-secondary hover:text-txt-primary disabled:opacity-25 disabled:cursor-not-allowed"
+            aria-label="Move up"
+            title="Move up"
+          >
+            <ArrowUp size={14} />
+          </button>
+          <button
+            onClick={() =>
+              moveExercise(client.id, weekId, dayId, section, exercise.id, 'down')
+            }
+            disabled={!canMoveDown}
+            className="w-8 h-8 inline-flex items-center justify-center rounded-full text-txt-secondary hover:text-txt-primary disabled:opacity-25 disabled:cursor-not-allowed"
+            aria-label="Move down"
+            title="Move down"
+          >
+            <ArrowDown size={14} />
+          </button>
           <button
             onClick={() => setShowHistory((v) => !v)}
-            className="btn-sm btn-secondary"
+            className="h-8 px-2.5 rounded-full text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 text-txt-secondary hover:text-txt-primary border border-border"
+            title="Toggle history"
           >
-            <TrendingUp size={14} />
-            History
-            {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <TrendingUp size={12} />
+            <span className="hidden sm:inline">History</span>
+            {showHistory ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
           <button
             onClick={() =>
               removeExercise(client.id, weekId, dayId, section, exercise.id)
             }
-            className="btn-icon text-txt-muted hover:text-brand-red"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
             aria-label="Remove exercise"
+            title="Remove exercise"
           >
-            <Trash2 size={18} />
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
 
+      {/* Progress bar */}
+      <div className="h-0.5" style={{ background: '#1C1C1F' }}>
+        <div
+          className="h-full transition-all"
+          style={{
+            width: pct + '%',
+            background: allDone ? '#3ADBC7' : '#D4FF3A',
+          }}
+        />
+      </div>
+
+      {/* History panel */}
       {showHistory && (
-        <div className="p-5 border-b border-border bg-bg-base">
+        <div className="px-5 py-4 border-b border-border bg-bg-base/40">
           <HistoryPanel client={client} exercise={exercise} />
         </div>
       )}
 
-      <div className="p-5 space-y-3">
-        {/* Column headers */}
-        <div
-          className="hidden md:grid gap-2 px-3 text-[10px] uppercase tracking-wider font-semibold text-txt-muted"
-          style={{
-            gridTemplateColumns:
-              'minmax(44px,56px) minmax(90px,1fr) minmax(90px,1fr) minmax(160px,auto) auto auto',
-          }}
-        >
-          <div>Set</div>
-          <div className="text-center">{weighted ? 'Weight' : ''}</div>
-          <div className="text-center">{timed ? 'Time' : 'Reps'}</div>
-          <div>Timer</div>
-          <div />
-          <div />
-        </div>
-
+      {/* Set rows */}
+      <div className="px-3 sm:px-5 py-3 space-y-1.5">
         {exercise.sets.length === 0 ? (
-          <div className="text-center py-6 text-txt-secondary text-sm">
+          <div className="text-center py-4 text-txt-muted text-[12px]">
             No sets yet.
           </div>
         ) : (
-          exercise.sets.map((s) => (
+          exercise.sets.map((s, i) => (
             <SetRow
               key={s.id}
               clientId={client.id}
@@ -492,44 +518,39 @@ export default function ExerciseBlock({
               section={section}
               exercise={exercise}
               set={s}
+              isLastSet={i === exercise.sets.length - 1}
+              isLastExercise={isLastExercise}
+              prev={prevByNumber[s.setNumber]}
             />
           ))
         )}
 
-        <div className="flex items-center justify-between gap-3 pt-2 flex-wrap">
+        {/* Footer: Add Set + rest seconds */}
+        <div className="flex items-center justify-between gap-3 pt-3 mt-1 border-t border-border flex-wrap">
           <button
-            className="btn-secondary btn-sm"
-            onClick={() =>
-              addSet(client.id, weekId, dayId, section, exercise.id)
-            }
+            className="h-9 px-3 rounded-full text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 border border-border text-txt-secondary hover:text-txt-primary hover:border-txt-muted"
+            onClick={() => addSet(client.id, weekId, dayId, section, exercise.id)}
           >
-            <Plus size={16} /> Add Set
+            <Plus size={12} /> Add Set
           </button>
           <div className="flex items-center gap-2">
-            <Timer size={16} className="text-txt-secondary" />
-            <span className="text-xs text-txt-secondary uppercase tracking-wide">
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-txt-muted">
               Rest
             </span>
             <input
               type="number"
               inputMode="numeric"
-              className="input tabular text-center"
-              style={{ width: 90, minHeight: 40, padding: '4px 10px' }}
+              className="bg-bg-base border border-border rounded-btn tabular text-center text-[12px]"
+              style={{ width: 64, height: 32, padding: '0 8px' }}
               value={exercise.restSeconds ?? 90}
               onChange={(e) =>
-                updateExercise(
-                  client.id,
-                  weekId,
-                  dayId,
-                  section,
-                  exercise.id,
-                  {
-                    restSeconds: Math.max(0, Number(e.target.value) || 0),
-                  }
-                )
+                updateExercise(client.id, weekId, dayId, section, exercise.id, {
+                  restSeconds: Math.max(0, Number(e.target.value) || 0),
+                })
               }
+              aria-label="Rest seconds"
             />
-            <span className="text-xs text-txt-muted">sec</span>
+            <span className="text-[10px] text-txt-muted">sec</span>
           </div>
         </div>
       </div>

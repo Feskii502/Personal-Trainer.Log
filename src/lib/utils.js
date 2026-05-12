@@ -96,3 +96,45 @@ export const calcBMI = (weightKg, heightCm) => {
   const m = heightCm / 100;
   return weightKg / (m * m);
 };
+
+// Walk the client's history from newest → oldest and return the most recent
+// completed sets for the given exercise (matched by libraryId), keyed by set
+// number. Used to show "PREV 80×10" hints next to each set in the current day.
+export const previousSetsFor = (client, libraryId, excludeDayId) => {
+  if (!client?.weeks || !libraryId) return {};
+  for (let wi = client.weeks.length - 1; wi >= 0; wi--) {
+    const w = client.weeks[wi];
+    if (!w?.days) continue;
+    for (let di = w.days.length - 1; di >= 0; di--) {
+      const d = w.days[di];
+      if (d.id === excludeDayId) continue;
+      for (const k of ['warmUp', 'resistance', 'coolDown']) {
+        for (const ex of d.sections[k]) {
+          if (ex.libraryId !== libraryId) continue;
+          const map = {};
+          for (const s of ex.sets) {
+            if (!s.completed) continue;
+            map[s.setNumber] = {
+              weight: s.weight,
+              reps: s.reps,
+              duration: s.duration,
+            };
+          }
+          if (Object.keys(map).length > 0) return map;
+        }
+      }
+    }
+  }
+  return {};
+};
+
+export const fmtPrevSet = (prev, type) => {
+  if (!prev) return '';
+  const isTimed = type === 'time' || type === 'timed' || type === 'timed+kg';
+  const hasWeight = ['+kg', '-kg', 'timed+kg'].includes(type);
+  const parts = [];
+  if (hasWeight && prev.weight != null) parts.push(`${prev.weight}kg`);
+  if (isTimed && prev.duration != null) parts.push(`${prev.duration}s`);
+  if (!isTimed && prev.reps != null) parts.push(`×${prev.reps}`);
+  return parts.join(' ');
+};

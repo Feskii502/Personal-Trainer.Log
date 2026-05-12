@@ -5,17 +5,14 @@ import {
   Flame,
   Dumbbell,
   Snowflake,
-  Search,
-  X,
   GripVertical,
   BookmarkPlus,
   FolderOpen,
+  PencilLine,
+  CheckCircle2,
+  Settings,
 } from 'lucide-react';
-import {
-  useStore,
-  updateDay,
-  addExerciseToDay,
-} from '../lib/store.js';
+import { useStore, updateDay, completeSession } from '../lib/store.js';
 import {
   DAY_NAMES,
   cx,
@@ -30,8 +27,6 @@ import {
   useTimerStore,
   useRefresh,
 } from '../hooks/useTimers.js';
-import TagEditor from './ui/TagEditor.jsx';
-import RestRing from './ui/RestRing.jsx';
 import AddExerciseModal from './AddExerciseModal.jsx';
 import ExerciseBlock from './ExerciseBlock.jsx';
 import BetweenExerciseRest from './BetweenExerciseRest.jsx';
@@ -41,38 +36,309 @@ import LoadPresetModal from './LoadPresetModal.jsx';
 import { useWorkoutPresets } from '../hooks/useWorkoutPresets.js';
 
 const SECTIONS = [
-  { key: 'warmUp', label: 'Warm Up', icon: Flame },
-  { key: 'resistance', label: 'Resistance', icon: Dumbbell },
-  { key: 'coolDown', label: 'Cool Down', icon: Snowflake },
+  { key: 'warmUp', label: 'Warm Up', Icon: Flame },
+  { key: 'resistance', label: 'Resistance', Icon: Dumbbell },
+  { key: 'coolDown', label: 'Cool Down', Icon: Snowflake },
 ];
+
+const SECTION_LABEL = {
+  warmUp: 'Warm Up',
+  resistance: 'Resistance',
+  coolDown: 'Cool Down',
+};
 
 const fmtVol = (kg) =>
   kg >= 1000 ? `${(kg / 1000).toFixed(1)}t` : `${Math.round(kg)}kg`;
 
+function SectionLabel({ children, className = '' }) {
+  return (
+    <div
+      className={cx(
+        'text-[10px] uppercase tracking-[0.22em] font-semibold text-txt-secondary',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ---------- Path bar (back / breadcrumb / settings) ----------
+function PathBar({ onBack, weekNumber, dayNumber, onOpenSettings }) {
+  return (
+    <div className="flex items-center justify-between gap-3 mb-7">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 px-3 h-10 rounded-full text-txt-secondary hover:text-txt-primary border border-border bg-bg-elevated/40 hover:bg-bg-elevated transition-colors"
+      >
+        <ArrowLeft size={15} />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+          Week
+        </span>
+      </button>
+      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-txt-secondary font-semibold">
+        <span>Wk {weekNumber}</span>
+        <span className="text-txt-muted">/</span>
+        <span>Day {dayNumber}</span>
+        <span className="text-txt-muted">/</span>
+        <span className="text-txt-muted">{DAY_NAMES[dayNumber - 1]}</span>
+      </div>
+      <button
+        onClick={onOpenSettings}
+        className="w-10 h-10 rounded-full flex items-center justify-center text-txt-secondary hover:text-txt-primary border border-border bg-bg-elevated/40 hover:bg-bg-elevated transition-colors"
+        aria-label="Settings"
+      >
+        <Settings size={15} />
+      </button>
+    </div>
+  );
+}
+
+// ---------- Hero ----------
+function Hero({ client, week, day, onTitleChange }) {
+  const phaseHex = phaseColor(week.phase);
+  const du = client.expiryDate ? daysUntil(client.expiryDate) : null;
+  const expiring = du !== null && du <= 14;
+  const expired = du !== null && du < 0;
+
+  return (
+    <div
+      className="card overflow-hidden relative mb-3"
+      style={{
+        background: `linear-gradient(135deg, ${phaseHex}10 0%, transparent 45%), var(--c-bg-surface)`,
+      }}
+    >
+      <div
+        className="absolute top-0 left-0 bottom-0"
+        style={{ width: 3, background: phaseHex }}
+      />
+      <div className="p-5 sm:p-6 pl-6 sm:pl-7">
+        <div className="flex items-start gap-4 mb-6">
+          <div
+            className="rounded-full flex items-center justify-center font-display font-bold relative flex-shrink-0"
+            style={{
+              width: 56,
+              height: 56,
+              background: '#0F0F11',
+              color: '#F5F5F7',
+              border: '1px solid #26262A',
+              fontSize: 18,
+            }}
+          >
+            {initialsOf(client.name)}
+            <span
+              className="absolute -bottom-0.5 -right-0.5 rounded-full"
+              style={{
+                width: 14,
+                height: 14,
+                background: phaseHex,
+                border: '2.5px solid var(--c-bg-surface)',
+              }}
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="font-display font-semibold tracking-tight text-[22px] sm:text-[26px] leading-tight truncate">
+              {client.name}
+            </div>
+            <div className="flex items-center gap-2 mt-1.5 text-[11px] text-txt-secondary flex-wrap">
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 h-6 rounded-full text-[10px] uppercase tracking-[0.18em] font-semibold border"
+                style={{ color: phaseHex, borderColor: phaseHex + '44' }}
+              >
+                <span
+                  className="inline-block rounded-full"
+                  style={{ width: 6, height: 6, background: phaseHex }}
+                />
+                {week.phase}
+              </span>
+              <span className="text-txt-muted tabular">
+                Wk {week.number} · Day {day.dayNumber} ·{' '}
+                {DAY_NAMES[day.dayNumber - 1]}
+              </span>
+              {du !== null && Number.isFinite(du) && (
+                <span
+                  className="tabular"
+                  style={{
+                    color: expired
+                      ? '#FF4D3A'
+                      : expiring
+                      ? '#FF8A3A'
+                      : 'var(--c-txt-muted)',
+                  }}
+                >
+                  · {expired ? 'Expired' : `${du}d left`}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {typeof client.sessionsRemaining === 'number' && (
+            <div className="text-right hidden sm:block flex-shrink-0">
+              <SectionLabel>Sessions</SectionLabel>
+              <div className="font-display font-semibold tabular leading-none mt-1 flex items-baseline gap-1 justify-end">
+                <span
+                  style={{
+                    fontSize: 24,
+                    color:
+                      client.sessionsRemaining <= 2 ? '#FF4D3A' : '#F5F5F7',
+                  }}
+                >
+                  {client.sessionsRemaining}
+                </span>
+                <span className="text-[12px] text-txt-muted">
+                  / {client.sessionsPackage || 10}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <SectionLabel className="flex items-center gap-1.5">
+            <PencilLine size={11} /> Day title
+          </SectionLabel>
+          <input
+            type="text"
+            value={day.title || ''}
+            onChange={(e) =>
+              onTitleChange(e.target.value)
+            }
+            placeholder="Push Day · Upper Body Strength"
+            className="w-full bg-transparent border-0 outline-none font-display font-semibold tracking-tight placeholder:text-txt-muted/50 text-txt-primary"
+            style={{
+              fontSize: 'clamp(26px, 3.5vw, 38px)',
+              lineHeight: 1.05,
+              letterSpacing: '-0.02em',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Sticky rest pill ----------
+function StickyRest() {
+  useTimerStore();
+  useRefresh(250);
+  const active = getActiveRest();
+  if (!active) return null;
+  const remaining = Math.max(0, active.remaining);
+  const pct = active.total > 0 ? remaining / active.total : 0;
+  const r = 28;
+  const c = 2 * Math.PI * r;
+  const label =
+    active.kind === 'between'
+      ? `before ${active.exerciseName || 'next exercise'}`
+      : active.nextSet
+      ? `until set ${active.nextSet}${
+          active.exerciseName ? ' of ' + active.exerciseName : ''
+        }`
+      : 'until next set';
+
+  return (
+    <div
+      className="sticky z-30 -mx-1 px-1 pt-2 pb-2"
+      style={{ top: 52 }}
+    >
+      <div
+        className="rounded-full flex items-center gap-3 p-1.5 pr-2"
+        style={{
+          background: 'rgba(20,20,22,0.78)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+          border: '1px solid rgba(212,255,58,0.35)',
+          boxShadow:
+            '0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 12px 32px -8px rgba(0,0,0,0.6), 0 0 32px -4px rgba(212,255,58,0.18)',
+        }}
+      >
+        <svg width="56" height="56" viewBox="0 0 64 64">
+          <circle
+            cx="32"
+            cy="32"
+            r={r}
+            fill="none"
+            stroke="#26262A"
+            strokeWidth="4"
+          />
+          <circle
+            cx="32"
+            cy="32"
+            r={r}
+            fill="none"
+            stroke="#D4FF3A"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - pct)}
+            transform="rotate(-90 32 32)"
+            style={{ transition: 'stroke-dashoffset .25s linear' }}
+          />
+          <text
+            x="32"
+            y="37"
+            textAnchor="middle"
+            fontSize="14"
+            fontWeight="700"
+            fill="#D4FF3A"
+            fontFamily="Space Grotesk"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            {Math.ceil(remaining)}
+          </text>
+        </svg>
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-[9px] uppercase tracking-[0.22em] font-semibold flex items-center gap-1.5"
+            style={{ color: '#D4FF3A' }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ background: '#D4FF3A' }}
+            />
+            Resting
+          </div>
+          <div className="font-display font-semibold tabular text-[20px] leading-tight tracking-tight">
+            {fmtSeconds(remaining)}
+          </div>
+          <div className="text-[10px] text-txt-secondary truncate">{label}</div>
+        </div>
+        <button
+          onClick={() => stopRest(active.id)}
+          className="h-9 px-4 rounded-full text-[11px] font-semibold uppercase tracking-wider text-txt-secondary hover:text-txt-primary border border-border bg-bg-base/60 transition-colors flex-shrink-0"
+        >
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Section pills ----------
 function SectionPills({ day, active, onPick }) {
   return (
-    <div className="flex items-center bg-bg-elevated/60 border border-border rounded-btn p-1">
+    <div className="flex items-center gap-2 flex-wrap">
       {SECTIONS.map((s) => {
-        const Icon = s.icon;
-        const count = day.sections[s.key].length;
         const isActive = s.key === active;
+        const count = day.sections[s.key].length;
         return (
           <button
             key={s.key}
             onClick={() => onPick(s.key)}
             className={cx(
-              'flex-1 h-11 rounded-btn text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors',
+              'h-11 px-4 rounded-full text-[12px] font-semibold uppercase tracking-wider transition-colors flex items-center gap-2',
               isActive
                 ? 'bg-brand-lime text-black'
-                : 'text-txt-secondary hover:text-txt-primary'
+                : 'text-txt-secondary hover:text-txt-primary bg-bg-elevated/60 border border-border'
             )}
           >
-            <Icon size={14} />
+            <s.Icon size={14} />
             <span>{s.label}</span>
             <span
               className={cx(
-                'tabular text-[10px] px-1.5 rounded',
-                isActive ? 'bg-black/15' : 'bg-bg-elevated'
+                'text-[10px] tabular px-1.5 py-0.5 rounded-full',
+                isActive ? 'bg-black/15' : 'bg-bg-base/60 text-txt-muted'
               )}
             >
               {count}
@@ -84,7 +350,8 @@ function SectionPills({ day, active, onPick }) {
   );
 }
 
-function SessionStats({ day }) {
+// ---------- Stats strip ----------
+function StatsStrip({ day }) {
   const stats = useMemo(() => {
     let sets = 0;
     let completed = 0;
@@ -104,42 +371,64 @@ function SessionStats({ day }) {
     }
     return { sets, completed, seconds, volume, exercises };
   }, [day]);
-  const pct =
-    stats.sets > 0 ? Math.round((stats.completed / stats.sets) * 100) : 0;
+
+  const pct = stats.sets > 0 ? Math.round((stats.completed / stats.sets) * 100) : 0;
+  const r = 22;
+  const c = 2 * Math.PI * r;
+
   return (
-    <div className="card p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="section-title">Session</div>
-        <span
-          className="font-display tabular font-bold text-xl"
-          style={{
-            color: pct === 100 && stats.sets > 0 ? '#D4FF3A' : '#F5F5F7',
-          }}
-        >
-          {pct}%
-        </span>
+    <div className="card p-4 flex items-center gap-5 flex-wrap">
+      <div className="flex items-center gap-3 pr-5 border-r border-border">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r={r} fill="none" stroke="#1C1C1F" strokeWidth="4" />
+          <circle
+            cx="28"
+            cy="28"
+            r={r}
+            fill="none"
+            stroke={pct === 100 ? '#3ADBC7' : '#D4FF3A'}
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - pct / 100)}
+            transform="rotate(-90 28 28)"
+          />
+        </svg>
+        <div>
+          <div
+            className="font-display tabular font-bold leading-none"
+            style={{
+              fontSize: 22,
+              color: pct === 100 ? '#3ADBC7' : '#F5F5F7',
+            }}
+          >
+            {pct}
+            <span className="text-[14px] text-txt-muted">%</span>
+          </div>
+          <div className="text-[9px] uppercase tracking-[0.2em] text-txt-muted mt-1">
+            Complete
+          </div>
+        </div>
       </div>
-      <div
-        className="h-1.5 rounded-full overflow-hidden mb-3"
-        style={{ background: '#1C1C1F' }}
-      >
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: pct + '%', background: '#D4FF3A' }}
-        />
-      </div>
-      <div className="grid grid-cols-4 gap-2">
+
+      <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 min-w-[260px]">
         {[
-          { label: 'Sets', value: `${stats.completed}/${stats.sets}` },
-          { label: 'Ex', value: stats.exercises },
+          {
+            label: 'Sets',
+            value: (
+              <span>
+                <span className="text-txt-primary">{stats.completed}</span>
+                <span className="text-txt-muted">/{stats.sets}</span>
+              </span>
+            ),
+          },
+          { label: 'Exercises', value: stats.exercises },
           { label: 'Volume', value: fmtVol(stats.volume) },
-          { label: 'Time', value: fmtSeconds(stats.seconds) },
+          { label: 'Elapsed', value: fmtSeconds(stats.seconds) },
         ].map((x) => (
           <div key={x.label}>
-            <div className="text-[9px] uppercase tracking-wider text-txt-muted">
-              {x.label}
-            </div>
-            <div className="font-display tabular font-bold text-sm">
+            <SectionLabel>{x.label}</SectionLabel>
+            <div className="font-display tabular font-semibold text-[18px] leading-none mt-1.5 text-txt-primary">
               {x.value}
             </div>
           </div>
@@ -149,174 +438,128 @@ function SessionStats({ day }) {
   );
 }
 
-function StickyRest() {
-  useTimerStore();
-  useRefresh(250);
-  const active = getActiveRest();
-  if (!active) return null;
+// ---------- Complete session — button only ----------
+function CompleteCard({ day, clientId, weekId, dayId }) {
+  const totalEx =
+    day.sections.warmUp.length +
+    day.sections.resistance.length +
+    day.sections.coolDown.length;
+  if (totalEx === 0) return null;
+  const done = day.completed;
   return (
-    <div
-      className="sticky z-30 -mx-1 px-1 pt-1 pb-2"
-      style={{
-        top: 56,
-        background:
-          'linear-gradient(to bottom, rgba(10,10,11,0.95) 75%, transparent)',
-      }}
-    >
-      <div
-        className="card p-4 flex items-center gap-4"
-        style={{
-          borderColor: '#D4FF3A55',
-          background:
-            'linear-gradient(135deg, rgba(212,255,58,0.05), transparent 60%), #141416',
-        }}
-      >
-        <RestRing
-          remaining={active.remaining}
-          total={active.total}
-          size={72}
-          stroke={6}
-        />
-        <div className="flex-1 min-w-0">
-          <div
-            className="text-[10px] uppercase tracking-[0.2em] font-semibold"
-            style={{ color: '#D4FF3A' }}
-          >
-            ● Resting
-          </div>
-          <div className="font-display font-bold tracking-tight text-xl tabular text-txt-primary">
-            {fmtSeconds(active.remaining)}
-          </div>
-          <div className="text-[11px] text-txt-secondary mt-0.5">
-            until next set
-          </div>
-        </div>
-        <button className="btn-secondary btn-sm" onClick={() => stopRest(active.id)}>
-          Skip
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function QuickAddPanel({ libraryExercises, onAdd, onCreateNew, currentSection }) {
-  const [q, setQ] = useState('');
-  const [muscle, setMuscle] = useState('all');
-  const muscles = useMemo(
-    () => ['all', ...new Set(libraryExercises.map((l) => l.mainMuscle))],
-    [libraryExercises]
-  );
-  const filtered = useMemo(
-    () =>
-      libraryExercises
-        .filter(
-          (l) =>
-            (muscle === 'all' || l.mainMuscle === muscle) &&
-            (q === '' ||
-              l.name.toLowerCase().includes(q.toLowerCase()) ||
-              (l.mainMuscle || '').toLowerCase().includes(q.toLowerCase()))
-        )
-        .slice(0, 12),
-    [libraryExercises, q, muscle]
-  );
-  const sectionLabel = SECTIONS.find((s) => s.key === currentSection)?.label;
-  return (
-    <div className="card p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="section-title">Quick add to {sectionLabel}</div>
-        <span className="text-[10px] tabular text-txt-muted">
-          {libraryExercises.length} library
-        </span>
-      </div>
-      <div className="relative">
-        <Search
-          size={14}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-secondary"
-        />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search exercises…"
-          className="w-full bg-bg-elevated/60 border border-border rounded-btn h-10 pl-9 pr-3 text-sm outline-none focus:border-brand-lime"
-        />
-      </div>
-      <div className="flex gap-1 flex-wrap">
-        {muscles.map((m) => (
-          <button
-            key={m}
-            onClick={() => setMuscle(m)}
-            className={cx(
-              'h-7 px-2.5 rounded-pill text-[10px] uppercase tracking-wider font-semibold border transition-colors',
-              muscle === m
-                ? 'bg-brand-lime text-black border-brand-lime'
-                : 'border-border text-txt-secondary hover:text-txt-primary'
-            )}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 gap-1.5">
-        {filtered.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => onAdd(l)}
-            className="group flex items-center gap-3 p-2.5 rounded-btn hover:bg-bg-elevated border border-transparent hover:border-border transition-colors text-left"
-          >
-            <div
-              className="w-8 h-8 rounded-btn flex items-center justify-center flex-shrink-0 border border-border bg-bg-elevated"
-            >
-              <span className="text-[10px] tabular font-bold text-brand-lime">
-                {l.type}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold truncate">{l.name}</div>
-              <div className="text-[10px] uppercase tracking-wider text-txt-muted truncate">
-                {l.mainMuscle}
-                {l.subMuscles?.length > 0 &&
-                  ` · ${l.subMuscles.slice(0, 2).join(', ')}`}
-              </div>
-            </div>
-            <div className="text-lg text-txt-muted group-hover:text-brand-lime transition-colors">
-              +
-            </div>
-          </button>
-        ))}
-        {filtered.length === 0 && (
-          <div className="py-6 text-center text-xs text-txt-muted">
-            No matches
-          </div>
-        )}
-      </div>
+    <div className="flex justify-end">
       <button
-        onClick={onCreateNew}
-        className="w-full mt-1 h-10 rounded-btn border border-dashed border-border text-xs uppercase tracking-wider font-semibold text-txt-secondary hover:text-brand-lime hover:border-brand-lime"
+        onClick={() => {
+          if (done) return;
+          if (confirm('Mark this session complete?')) {
+            completeSession(clientId, weekId, dayId);
+          }
+        }}
+        disabled={done}
+        className={cx(
+          'h-11 px-5 rounded-full text-[12px] font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors flex-shrink-0',
+          done
+            ? 'bg-bg-elevated text-txt-secondary cursor-default border border-border'
+            : 'bg-brand-lime text-black hover:opacity-90'
+        )}
       >
-        + Create new exercise
+        <CheckCircle2 size={14} />
+        {done ? 'Session complete' : 'Complete session'}
       </button>
     </div>
   );
 }
 
+// ---------- Floating dock — workout actions ----------
+function FloatingDock({ canSave, canReorder, onLoad, onSave, onAdd, onReorder }) {
+  const items = [
+    { key: 'load', label: 'Load', Icon: FolderOpen, onClick: onLoad },
+    {
+      key: 'save',
+      label: 'Save',
+      Icon: BookmarkPlus,
+      onClick: onSave,
+      disabled: !canSave,
+    },
+    { key: 'add', label: 'Add', Icon: Plus, onClick: onAdd, primary: true },
+    {
+      key: 'reorder',
+      label: 'Reorder',
+      Icon: GripVertical,
+      onClick: onReorder,
+      disabled: !canReorder,
+    },
+  ];
+  return (
+    <div
+      className="fixed z-30 left-1/2 -translate-x-1/2"
+      style={{ bottom: 'max(20px, env(safe-area-inset-bottom))' }}
+    >
+      <div
+        className="flex items-center gap-1 p-1.5 rounded-full"
+        style={{
+          background: 'rgba(20,20,22,0.55)',
+          backdropFilter: 'blur(28px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow:
+            '0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 18px 50px -12px rgba(0,0,0,0.7), 0 6px 18px -8px rgba(0,0,0,0.5)',
+        }}
+      >
+        {items.map((it) => {
+          const disabled = it.disabled;
+          return (
+            <button
+              key={it.key}
+              onClick={it.onClick}
+              disabled={disabled}
+              className={cx(
+                'flex items-center gap-2 h-11 px-4 rounded-full transition-all duration-200 ease-out',
+                disabled && 'opacity-30 cursor-not-allowed',
+                !disabled &&
+                  (it.primary
+                    ? 'text-bg-base'
+                    : 'text-txt-secondary hover:text-txt-primary')
+              )}
+              style={
+                !disabled && it.primary
+                  ? {
+                      background: '#D4FF3A',
+                      color: '#0A0A0B',
+                      boxShadow:
+                        '0 6px 16px -4px rgba(212,255,58,0.45), 0 0 0 0.5px rgba(255,255,255,0.1) inset',
+                    }
+                  : {}
+              }
+              aria-label={it.label}
+              title={it.label}
+            >
+              <it.Icon size={15} />
+              <span className="text-[12px] font-semibold tracking-tight">
+                {it.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
+// ---------- DayView ----------
 export default function DayView({
   clientId,
   weekId,
   dayId,
   onBack,
-  activeSessions = [],
-  onSwitchSession,
-  onCloseSession,
-  onAddClient,
+  onOpenSettings,
 }) {
-  const { clients, library } = useStore();
+  const { clients } = useStore();
   const client = clients.find((c) => c.id === clientId);
   const week = client?.weeks.find((w) => w.id === weekId);
   const day = week?.days.find((d) => d.id === dayId);
 
   const [section, setSection] = useState('resistance');
-  const [picker, setPicker] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [reorderOpen, setReorderOpen] = useState(false);
   const [savePresetOpen, setSavePresetOpen] = useState(false);
@@ -335,202 +578,77 @@ export default function DayView({
   }
 
   const exercises = day.sections[section];
-  const sectionLabel = SECTIONS.find((s) => s.key === section).label;
-  const du = client.expiryDate ? daysUntil(client.expiryDate) : null;
-  const phaseHex = phaseColor(week.phase);
+  const sectionLabel = SECTION_LABEL[section];
 
-  const handleAdd = (lib) => {
-    addExerciseToDay(clientId, weekId, dayId, section, lib);
-    setPicker(false);
-  };
+  const canSave =
+    day.sections.warmUp.length +
+      day.sections.resistance.length +
+      day.sections.coolDown.length >
+    0;
+  const canReorder = exercises.length >= 2;
 
   return (
-    <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pt-6 pb-20">
-        <div className="flex items-center justify-between mb-5">
-          <button
-            onClick={onBack}
-            className="btn-icon text-txt-secondary hover:text-txt-primary"
-            aria-label="Back"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-txt-secondary">
-            <span>Wk {week.number}</span>
-            <span className="text-txt-muted">·</span>
-            <span>
-              Day {day.dayNumber} · {DAY_NAMES[day.dayNumber - 1]}
-            </span>
-          </div>
-          <div style={{ width: 44 }} />
-        </div>
-
-        {/* Header card: avatar + identity + pill tabs */}
-        <div className="card p-4 sm:p-5 mb-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="rounded-full flex items-center justify-center font-display font-bold relative flex-shrink-0"
-              style={{
-                width: 48,
-                height: 48,
-                background: '#1C1C1F',
-                color: '#D4FF3A',
-                border: '1px solid #26262A',
-                fontSize: 16,
-              }}
-            >
-              {initialsOf(client.name)}
-              <span
-                className="absolute -bottom-0.5 -right-0.5 rounded-full"
-                style={{
-                  width: 14,
-                  height: 14,
-                  background: phaseHex,
-                  border: '2px solid #141416',
-                }}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-display font-bold tracking-tight text-lg sm:text-xl truncate">
-                {client.name}
-              </div>
-              <div className="flex items-center gap-2 mt-0.5 text-[11px] text-txt-secondary flex-wrap">
-                <span
-                  className="inline-block rounded-full"
-                  style={{
-                    width: 8,
-                    height: 8,
-                    background: phaseHex,
-                  }}
-                />
-                <span className="uppercase tracking-wide">{week.phase}</span>
-                <span className="text-txt-muted">
-                  · Wk {week.number} · Day {day.dayNumber}
-                </span>
-                {du !== null && Number.isFinite(du) && (
-                  <span className="text-txt-muted">
-                    · {du > 0 ? `${du}d left` : 'Expired'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <SectionPills day={day} active={section} onPick={setSection} />
-        </div>
-
+    <div className="min-h-full pb-32">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-12 pt-7">
+        <PathBar
+          onBack={onBack}
+          weekNumber={week.number}
+          dayNumber={day.dayNumber}
+          onOpenSettings={onOpenSettings}
+        />
+        <Hero
+          client={client}
+          week={week}
+          day={day}
+          onTitleChange={(title) =>
+            updateDay(clientId, weekId, dayId, { title })
+          }
+        />
         <StickyRest />
 
-        <div className="space-y-4">
-          <SessionStats day={day} />
+        <div className="space-y-4 mt-3">
+          <SectionPills day={day} active={section} onPick={setSection} />
+          <StatsStrip day={day} />
 
-          <div className="card p-4">
-            <div className="section-title mb-3">
-              Day Tags · select any that apply
-            </div>
-            <TagEditor
-              value={day.tags || []}
-              onChange={(tags) =>
-                updateDay(clientId, weekId, dayId, { tags })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="section-title">
+          <div className="flex items-baseline justify-between pt-2">
+            <h2 className="font-display font-semibold text-[20px] tracking-tight">
+              {sectionLabel}
+            </h2>
+            <span className="text-[11px] tabular text-txt-muted uppercase tracking-[0.18em]">
               {exercises.length} exercise
-              {exercises.length === 1 ? '' : 's'} · {sectionLabel}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setLoadPresetOpen(true)}
-                className="h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 border border-border text-txt-secondary hover:text-txt-primary hover:border-[#3a3a40]"
-                title="Load a saved workout preset into this day"
-              >
-                <FolderOpen size={14} /> Load preset
-              </button>
-              <button
-                onClick={() => setSavePresetOpen(true)}
-                disabled={
-                  day.sections.warmUp.length === 0 &&
-                  day.sections.resistance.length === 0 &&
-                  day.sections.coolDown.length === 0
-                }
-                className="h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 border border-border text-txt-secondary hover:text-txt-primary hover:border-[#3a3a40] disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Save this day's exercises as a reusable preset"
-              >
-                <BookmarkPlus size={14} /> Save preset
-              </button>
-              {exercises.length > 1 && (
-                <button
-                  onClick={() => setReorderOpen(true)}
-                  className="h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 border border-border text-txt-secondary hover:text-txt-primary hover:border-[#3a3a40]"
-                >
-                  <GripVertical size={14} /> Reorder
-                </button>
-              )}
-              <button
-                onClick={() => setPicker((p) => !p)}
-                className={cx(
-                  'h-10 px-3 rounded-btn text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 transition-colors',
-                  picker
-                    ? 'bg-bg-elevated text-txt-primary border border-border'
-                    : 'bg-brand-lime text-black'
-                )}
-              >
-                {picker ? (
-                  <>
-                    <X size={14} /> Close
-                  </>
-                ) : (
-                  <>
-                    <Plus size={14} /> Quick Add
-                  </>
-                )}
-              </button>
-            </div>
+              {exercises.length === 1 ? '' : 's'}
+            </span>
           </div>
-
-          {picker && (
-            <QuickAddPanel
-              libraryExercises={library}
-              onAdd={handleAdd}
-              onCreateNew={() => {
-                setPicker(false);
-                setCreateOpen(true);
-              }}
-              currentSection={section}
-            />
-          )}
 
           {exercises.length === 0 ? (
-            <div className="card p-8 text-center">
-              <div className="text-base font-semibold mb-1">
-                No exercises in this section
+            <div className="card p-10 text-center">
+              <div className="font-display font-semibold text-[16px] mb-1">
+                No exercises in {sectionLabel.toLowerCase()}
               </div>
-              <div className="text-xs text-txt-secondary mb-4">
-                Quick-add above or create a new one.
+              <div className="text-[12px] text-txt-secondary">
+                Tap{' '}
+                <span className="font-semibold" style={{ color: '#D4FF3A' }}>
+                  Add
+                </span>{' '}
+                in the dock below, or load a saved preset.
               </div>
-              <button
-                onClick={() => setPicker(true)}
-                className="btn-primary btn-sm"
-              >
-                <Plus size={16} /> Add Exercise
-              </button>
             </div>
           ) : (
-            <div className="space-y-5">
-              {exercises.map((ex, idx) => (
-                <div key={ex.id} className="space-y-4">
+            <div className="space-y-3">
+              {exercises.map((ex, i) => (
+                <div key={ex.id} className="space-y-3">
                   <ExerciseBlock
                     client={client}
                     weekId={weekId}
                     dayId={dayId}
                     section={section}
                     exercise={ex}
-                    canMoveUp={idx > 0}
-                    canMoveDown={idx < exercises.length - 1}
+                    canMoveUp={i > 0}
+                    canMoveDown={i < exercises.length - 1}
+                    isLastExercise={i === exercises.length - 1}
+                    idx={i}
                   />
-                  {section === 'resistance' && idx < exercises.length - 1 && (
+                  {section === 'resistance' && i < exercises.length - 1 && (
                     <BetweenExerciseRest
                       dayId={dayId}
                       defaultSeconds={ex.betweenRestSeconds || 120}
@@ -540,8 +658,24 @@ export default function DayView({
               ))}
             </div>
           )}
+
+          <CompleteCard
+            day={day}
+            clientId={clientId}
+            weekId={weekId}
+            dayId={dayId}
+          />
         </div>
       </div>
+
+      <FloatingDock
+        canSave={canSave}
+        canReorder={canReorder}
+        onLoad={() => setLoadPresetOpen(true)}
+        onSave={() => setSavePresetOpen(true)}
+        onAdd={() => setCreateOpen(true)}
+        onReorder={() => setReorderOpen(true)}
+      />
 
       <ReorderExercisesModal
         open={reorderOpen}

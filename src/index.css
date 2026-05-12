@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --c-bg-base: #0a0a0b;
+  --c-bg-surface: #141416;
+  --c-bg-elevated: #1c1c1f;
+  --c-border: #26262a;
+  --c-txt-primary: #f5f5f7;
+  --c-txt-secondary: #8a8a90;
+  --c-txt-muted: #555559;
+  --c-dot-1: rgba(255, 255, 255, 0.075);
+  --c-dot-2: rgba(255, 255, 255, 0.05);
+}
+
+:root[data-theme='light'] {
+  --c-bg-base: #f5f5f4;
+  --c-bg-surface: #ffffff;
+  --c-bg-elevated: #f0efed;
+  --c-border: #dcdad6;
+  --c-txt-primary: #15151a;
+  --c-txt-secondary: #5b5b62;
+  --c-txt-muted: #9a9aa1;
+  --c-dot-1: rgba(0, 0, 0, 0.07);
+  --c-dot-2: rgba(0, 0, 0, 0.045);
+}
+
 @layer base {
   html,
   body,
@@ -16,10 +40,10 @@
   }
   body.pt-bg,
   .pt-bg {
-    background-color: #0a0a0b !important;
+    background-color: var(--c-bg-base) !important;
     background-image:
-      radial-gradient(rgba(255, 255, 255, 0.075) 1.4px, transparent 1.6px),
-      radial-gradient(rgba(255, 255, 255, 0.05) 1.1px, transparent 1.3px) !important;
+      radial-gradient(var(--c-dot-1) 1.4px, transparent 1.6px),
+      radial-gradient(var(--c-dot-2) 1.1px, transparent 1.3px) !important;
     background-size: 22px 22px, 22px 22px !important;
     background-position: 0 0, 11px 11px !important;
     background-attachment: fixed;

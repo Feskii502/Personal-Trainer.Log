@@ -15,11 +15,16 @@ export default function SessionTabBar({
   onBack,
   showBack = false,
 }) {
-  if (!sessions || sessions.length === 0) return null;
+  const list = sessions || [];
   return (
     <div
       className="sticky top-0 z-40 border-b border-border flex items-stretch flex-shrink-0"
-      style={{ background: '#0A0A0B', height: 56 }}
+      style={{
+        background: 'rgba(10,10,11,0.85)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        height: 52,
+      }}
     >
       <div className="flex items-center gap-2 px-3 sm:px-4 border-r border-border flex-shrink-0">
         {showBack && (
@@ -62,7 +67,12 @@ export default function SessionTabBar({
       </div>
 
       <div className="flex-1 flex items-stretch overflow-x-auto min-w-0 no-scrollbar">
-        {sessions.map((s) => {
+        {list.length === 0 && (
+          <div className="flex items-center px-4 text-[11px] uppercase tracking-wider text-txt-muted">
+            No active sessions
+          </div>
+        )}
+        {list.map((s) => {
           const c = clients.find((x) => x.id === s.clientId);
           const w = c?.weeks?.find((wk) => wk.id === s.weekId);
           const d = w?.days?.find((dd) => dd.id === s.dayId);
@@ -131,11 +141,11 @@ export default function SessionTabBar({
         <button
           onClick={onAdd}
           className="px-4 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-txt-secondary hover:text-txt-primary hover:bg-bg-surface flex-shrink-0"
-          aria-label="Add client"
-          title="Add another client (open dashboard)"
+          aria-label="Add tab"
+          title="Add another client as a tab"
         >
           <Plus size={14} className="text-brand-lime" />
-          <span className="hidden sm:inline">Add client</span>
+          <span className="hidden sm:inline">Add Tab</span>
         </button>
       </div>
     </div>

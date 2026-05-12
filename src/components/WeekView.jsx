@@ -7,7 +7,6 @@ import {
   initialsOf,
   phaseColor,
 } from '../lib/utils.js';
-import { TagList } from './ui/TagEditor.jsx';
 
 function dayStats(day) {
   let total = 0;
@@ -45,17 +44,17 @@ function DayCard({ day, onOpen, phaseHex }) {
           style={{ height: 2, background: complete ? '#3ADBC7' : phaseHex }}
         />
       )}
-      <div className="flex items-start justify-between mb-2">
-        <div>
+      <div className="flex items-start justify-between mb-1.5">
+        <div className="flex items-baseline gap-1.5">
+          <div className="font-display tabular font-bold text-3xl leading-none">
+            {day.dayNumber}
+          </div>
           <div className="text-[10px] uppercase tracking-wider font-semibold text-txt-muted">
             {DAY_NAMES[day.dayNumber - 1]}
           </div>
-          <div className="font-display tabular font-bold text-3xl leading-none mt-0.5">
-            {day.dayNumber}
-          </div>
         </div>
         {hasContent ? (
-          complete ? (
+          day.completed || complete ? (
             <CheckCircle2 size={18} className="text-[#3ADBC7]" />
           ) : (
             <Circle size={18} className="text-txt-muted" />
@@ -63,9 +62,9 @@ function DayCard({ day, onOpen, phaseHex }) {
         ) : null}
       </div>
 
-      {day.tags?.length > 0 && (
-        <div className="mb-2">
-          <TagList tags={day.tags} />
+      {day.title && (
+        <div className="font-display font-semibold text-[13px] sm:text-sm leading-snug truncate mb-1.5">
+          {day.title}
         </div>
       )}
 
