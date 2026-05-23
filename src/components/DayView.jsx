@@ -261,10 +261,10 @@ function StickyRest() {
       <div
         className="rounded-full flex items-center gap-3 p-1.5 pr-2"
         style={{
-          background: 'rgba(20,20,22,0.78)',
+          background: 'var(--c-glass-rest)',
           backdropFilter: 'blur(24px) saturate(180%)',
           WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          border: '1px solid rgba(212,255,58,0.35)',
+          border: '1px solid var(--c-glass-rest-border)',
           boxShadow:
             '0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 12px 32px -8px rgba(0,0,0,0.6), 0 0 32px -4px rgba(212,255,58,0.18)',
         }}
@@ -307,11 +307,11 @@ function StickyRest() {
         <div className="flex-1 min-w-0">
           <div
             className="text-[9px] uppercase tracking-[0.22em] font-semibold flex items-center gap-1.5"
-            style={{ color: '#D4FF3A' }}
+            style={{ color: 'var(--c-brand-lime)' }}
           >
             <span
               className="w-1.5 h-1.5 rounded-full animate-pulse"
-              style={{ background: '#D4FF3A' }}
+              style={{ background: 'var(--c-brand-lime)' }}
             />
             Resting
           </div>
@@ -402,7 +402,7 @@ function StatsStrip({ day, onComplete, completeDisabled, completed }) {
             cy="28"
             r={r}
             fill="none"
-            stroke={pct === 100 ? '#3ADBC7' : '#D4FF3A'}
+            stroke={pct === 100 ? '#3ADBC7' : 'var(--c-brand-lime)'}
             strokeWidth="4"
             strokeLinecap="round"
             strokeDasharray={c}
@@ -499,10 +499,10 @@ function FloatingDock({ canSave, canReorder, onLoad, onSave, onAdd, onReorder })
       <div
         className="flex items-center gap-1 p-1.5 rounded-full"
         style={{
-          background: 'rgba(20,20,22,0.55)',
+          background: 'var(--c-glass-dock)',
           backdropFilter: 'blur(28px) saturate(180%)',
           WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid var(--c-glass-border)',
           boxShadow:
             '0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 18px 50px -12px rgba(0,0,0,0.7), 0 6px 18px -8px rgba(0,0,0,0.5)',
         }}
@@ -525,7 +525,7 @@ function FloatingDock({ canSave, canReorder, onLoad, onSave, onAdd, onReorder })
               style={
                 !disabled && it.primary
                   ? {
-                      background: '#D4FF3A',
+                      background: 'var(--c-brand-lime)',
                       color: '#0A0A0B',
                       boxShadow:
                         '0 6px 16px -4px rgba(212,255,58,0.45), 0 0 0 0.5px rgba(255,255,255,0.1) inset',
@@ -655,7 +655,7 @@ export default function DayView({
               </div>
               <div className="text-[12px] text-txt-secondary">
                 Tap{' '}
-                <span className="font-semibold" style={{ color: '#D4FF3A' }}>
+                <span className="font-semibold" style={{ color: 'var(--c-brand-lime)' }}>
                   Add
                 </span>{' '}
                 in the dock below, or load a saved preset.

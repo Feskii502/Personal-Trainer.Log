@@ -265,60 +265,65 @@ function SetRow({
     >
       {/* Phone: two rows. Row 1: #, prev, weight, reps. Row 2: drop, timer, check, X. */}
       <div className="sm:hidden space-y-3">
-        <div
-          className="grid items-center gap-3"
-          style={{ gridTemplateColumns: '32px 1fr 1fr 1fr' }}
-        >
-          {setIdxCell}
-          {prevCell}
-          {weightInput}
-          {repsInput}
+        <div className="flex items-center gap-3">
+          <div className="w-8 text-center flex-shrink-0">{setIdxCell}</div>
+          <div className="w-[68px] flex-shrink-0">{prevCell}</div>
+          <div className="flex-1">{weightInput}</div>
+          <div className="flex-1">{repsInput}</div>
         </div>
         <div className="flex items-center gap-3">
-          {dropBtn}
+          <div className="flex-shrink-0">{dropBtn}</div>
           <div className="flex-1">{timerBtn}</div>
-          {checkBtn}
-          {deleteBtn}
+          <div className="flex-shrink-0">{checkBtn}</div>
+          <div className="ml-auto flex-shrink-0">{deleteBtn}</div>
         </div>
       </div>
 
-      {/* Desktop: one row. # | prev | weight | reps | drop | timer | check | X */}
-      <div
-        className="hidden sm:grid items-center gap-3"
-        style={{
-          gridTemplateColumns:
-            '36px 96px minmax(80px,110px) minmax(80px,110px) auto auto auto auto',
-        }}
-      >
-        {setIdxCell}
-        {prevCell}
-        {weightInput}
-        {repsInput}
-        {dropBtn}
-        {timerBtn}
-        {checkBtn}
-        {deleteBtn}
+      {/* Desktop: tight flex row. # | prev | weight | reps | drop | timer | check | (spacer) | X */}
+      <div className="hidden sm:flex items-center gap-3">
+        <div className="w-8 text-center flex-shrink-0">{setIdxCell}</div>
+        <div className="w-[88px] flex-shrink-0">{prevCell}</div>
+        <div className="w-[96px] flex-shrink-0">{weightInput}</div>
+        <div className="w-[96px] flex-shrink-0">{repsInput}</div>
+        <div className="flex-shrink-0">{dropBtn}</div>
+        <div className="flex-shrink-0">{timerBtn}</div>
+        <div className="flex-shrink-0">{checkBtn}</div>
+        <div className="ml-auto flex-shrink-0">{deleteBtn}</div>
       </div>
 
-      {/* Drop sets */}
+      {/* Drop sets — align under the weight column of the main row */}
       {set.dropSets?.length > 0 && (
-        <div className="mt-2 sm:pl-[140px] space-y-1.5">
+        <div className="mt-2 sm:pl-[132px] space-y-1.5">
           {set.dropSets.map((ds) => (
-            <div
-              key={ds.id}
-              className="grid items-center gap-2"
-              style={{
-                gridTemplateColumns: 'auto minmax(0,1fr) minmax(0,1fr) auto',
-              }}
-            >
-              <span className="text-[9px] uppercase tracking-wider font-semibold text-txt-muted">
+            <div key={ds.id} className="flex items-center gap-3">
+              <span className="text-[9px] uppercase tracking-wider font-semibold text-txt-muted w-10 flex-shrink-0">
                 Drop
               </span>
               {weighted ? (
+                <div className="w-[96px] flex-shrink-0">
+                  <NumInput
+                    value={ds.weight}
+                    placeholder="kg"
+                    suffix="kg"
+                    onChange={(v) =>
+                      updateDropSet(
+                        clientId,
+                        weekId,
+                        dayId,
+                        section,
+                        exercise.id,
+                        set.id,
+                        ds.id,
+                        { weight: v }
+                      )
+                    }
+                  />
+                </div>
+              ) : null}
+              <div className="w-[96px] flex-shrink-0">
                 <NumInput
-                  value={ds.weight}
-                  placeholder="kg"
-                  suffix="kg"
+                  value={ds.reps}
+                  placeholder="reps"
                   onChange={(v) =>
                     updateDropSet(
                       clientId,
@@ -328,31 +333,13 @@ function SetRow({
                       exercise.id,
                       set.id,
                       ds.id,
-                      { weight: v }
+                      { reps: v }
                     )
                   }
                 />
-              ) : (
-                <div />
-              )}
-              <NumInput
-                value={ds.reps}
-                placeholder="reps"
-                onChange={(v) =>
-                  updateDropSet(
-                    clientId,
-                    weekId,
-                    dayId,
-                    section,
-                    exercise.id,
-                    set.id,
-                    ds.id,
-                    { reps: v }
-                  )
-                }
-              />
+              </div>
               <button
-                className="w-8 h-8 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
+                className="ml-auto w-8 h-8 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red flex-shrink-0"
                 onClick={() =>
                   removeDropSet(
                     clientId,
@@ -492,7 +479,7 @@ export default function ExerciseBlock({
           className="h-full transition-all"
           style={{
             width: pct + '%',
-            background: allDone ? '#3ADBC7' : '#D4FF3A',
+            background: allDone ? '#3ADBC7' : 'var(--c-brand-lime)',
           }}
         />
       </div>

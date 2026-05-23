@@ -130,7 +130,7 @@ function AccountTab() {
             width: 64,
             height: 64,
             background: '#1C1C1F',
-            color: '#D4FF3A',
+            color: 'var(--c-brand-lime)',
             border: '1px solid #26262A',
           }}
         >
@@ -336,7 +336,7 @@ function ExportTab() {
               height: 44,
               background: '#D4FF3A14',
               border: '1px solid #D4FF3A33',
-              color: '#D4FF3A',
+              color: 'var(--c-brand-lime)',
             }}
           >
             <FileSpreadsheet size={20} />
@@ -391,7 +391,7 @@ function ExportTab() {
                       width: 38,
                       height: 38,
                       background: '#1C1C1F',
-                      color: '#D4FF3A',
+                      color: 'var(--c-brand-lime)',
                       border: '1px solid #26262A',
                     }}
                   >

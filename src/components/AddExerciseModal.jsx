@@ -228,7 +228,7 @@ export default function AddExerciseModal({
                   <span
                     className="text-[10px] tabular font-semibold uppercase px-1.5 py-0.5 rounded"
                     style={{
-                      color: '#D4FF3A',
+                      color: 'var(--c-brand-lime)',
                       background: '#D4FF3A14',
                     }}
                   >

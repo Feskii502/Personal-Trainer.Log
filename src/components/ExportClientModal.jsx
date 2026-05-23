@@ -135,7 +135,7 @@ export default function ExportClientModal({ open, onClose, client }) {
               width: 44,
               height: 44,
               background: '#1C1C1F',
-              color: '#D4FF3A',
+              color: 'var(--c-brand-lime)',
               border: '1px solid #26262A',
             }}
           >

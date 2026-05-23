@@ -143,7 +143,7 @@ export default function HistoryPanel({ client, exercise }) {
               dataKey={timed ? 'totalDuration' : 'topWeight'}
               stroke="#D4FF3A"
               strokeWidth={2.5}
-              dot={{ r: 3, fill: '#D4FF3A', stroke: '#D4FF3A' }}
+              dot={{ r: 3, fill: 'var(--c-brand-lime)', stroke: 'var(--c-brand-lime)' }}
               activeDot={{ r: 5 }}
             />
           </LineChart>
@@ -165,7 +165,7 @@ export default function HistoryPanel({ client, exercise }) {
                   {s.current && (
                     <span
                       className="ml-2 text-[10px] tabular font-semibold px-1.5 py-0.5 rounded uppercase"
-                      style={{ color: '#D4FF3A', background: '#D4FF3A14' }}
+                      style={{ color: 'var(--c-brand-lime)', background: '#D4FF3A14' }}
                     >
                       Current
                     </span>

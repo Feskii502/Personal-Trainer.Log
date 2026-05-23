@@ -404,7 +404,7 @@ function Roster({ clients, onOpenClient, onNewClient }) {
         <button
           onClick={onNewClient}
           className="h-9 px-3.5 rounded-full text-[12px] font-semibold tracking-tight flex items-center gap-1.5 transition-colors"
-          style={{ background: '#D4FF3A', color: '#0A0A0B' }}
+          style={{ background: 'var(--c-brand-lime)', color: '#0A0A0B' }}
         >
           <Plus size={13} /> New client
         </button>
@@ -495,7 +495,7 @@ function NextUpStrip({ sessions, clients, onOpenClient }) {
               {isFirst && (
                 <span
                   className="text-[10px] uppercase tracking-[0.2em] font-semibold"
-                  style={{ color: '#D4FF3A' }}
+                  style={{ color: 'var(--c-brand-lime)' }}
                 >
                   ● Soonest
                 </span>
@@ -571,7 +571,7 @@ function WeeklySchedule({ sessions, clients, onOpenClient, onAddSession }) {
         <button
           onClick={onAddSession}
           className="h-9 px-3.5 rounded-full text-[12px] font-semibold tracking-tight flex items-center gap-1.5"
-          style={{ background: '#D4FF3A', color: '#0A0A0B' }}
+          style={{ background: 'var(--c-brand-lime)', color: '#0A0A0B' }}
         >
           <Plus size={13} /> Schedule
         </button>
@@ -596,13 +596,13 @@ function WeeklySchedule({ sessions, clients, onOpenClient, onAddSession }) {
                         'text-[10px] uppercase tracking-[0.2em] font-semibold',
                         isToday ? '' : 'text-txt-muted'
                       )}
-                      style={isToday ? { color: '#D4FF3A' } : {}}
+                      style={isToday ? { color: 'var(--c-brand-lime)' } : {}}
                     >
                       {d.label}
                     </div>
                     <div
                       className="font-display tabular font-semibold text-[18px] leading-none mt-1"
-                      style={isToday ? { color: '#D4FF3A' } : {}}
+                      style={isToday ? { color: 'var(--c-brand-lime)' } : {}}
                     >
                       {d.dayNum}
                     </div>
@@ -610,7 +610,7 @@ function WeeklySchedule({ sessions, clients, onOpenClient, onAddSession }) {
                   {isToday && (
                     <div
                       className="w-1.5 h-1.5 rounded-full mt-1"
-                      style={{ background: '#D4FF3A' }}
+                      style={{ background: 'var(--c-brand-lime)' }}
                     />
                   )}
                 </div>
@@ -726,7 +726,7 @@ function ExerciseLibrarySection({ library }) {
         <button
           onClick={() => setOpenNew(true)}
           className="h-9 px-3.5 rounded-full text-[12px] font-semibold tracking-tight flex items-center gap-1.5"
-          style={{ background: '#D4FF3A', color: '#0A0A0B' }}
+          style={{ background: 'var(--c-brand-lime)', color: '#0A0A0B' }}
         >
           <Plus size={13} /> New exercise
         </button>
@@ -857,7 +857,7 @@ function WorkoutPresetsSection() {
         <button
           onClick={startNew}
           className="h-9 px-3.5 rounded-full text-[12px] font-semibold tracking-tight flex items-center gap-1.5"
-          style={{ background: '#D4FF3A', color: '#0A0A0B' }}
+          style={{ background: 'var(--c-brand-lime)', color: '#0A0A0B' }}
         >
           <Plus size={13} /> New preset
         </button>
@@ -976,10 +976,10 @@ function FloatingDock({ page, onChange }) {
       <div
         className="flex items-center gap-1 p-1.5 rounded-full"
         style={{
-          background: 'rgba(20,20,22,0.55)',
+          background: 'var(--c-glass-dock)',
           backdropFilter: 'blur(28px) saturate(180%)',
           WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid var(--c-glass-border)',
           boxShadow:
             '0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 18px 50px -12px rgba(0,0,0,0.7), 0 6px 18px -8px rgba(0,0,0,0.5)',
         }}
@@ -997,7 +997,7 @@ function FloatingDock({ page, onChange }) {
               style={
                 active
                   ? {
-                      background: '#D4FF3A',
+                      background: 'var(--c-brand-lime)',
                       color: '#0A0A0B',
                       boxShadow:
                         '0 6px 16px -4px rgba(212,255,58,0.45), 0 0 0 0.5px rgba(255,255,255,0.1) inset',

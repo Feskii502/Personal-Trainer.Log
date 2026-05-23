@@ -118,7 +118,7 @@ function EditableSessionsLeft({ client, stats }) {
       ? '#FF4D3A'
       : stats.sessionsLeft <= 4
       ? '#FF8A3A'
-      : '#D4FF3A';
+      : 'var(--c-brand-lime)';
   if (editing) {
     return (
       <input
@@ -208,7 +208,7 @@ function HeaderCard({ client, stats, onDelete }) {
       ? '#FF4D3A'
       : stats.sessionsLeft <= 4
       ? '#FF8A3A'
-      : '#D4FF3A';
+      : 'var(--c-brand-lime)';
 
   return (
     <div className="card p-5 sm:p-6">
@@ -219,7 +219,7 @@ function HeaderCard({ client, stats, onDelete }) {
             width: 64,
             height: 64,
             background: '#1C1C1F',
-            color: '#D4FF3A',
+            color: 'var(--c-brand-lime)',
             border: '1px solid #26262A',
             fontSize: 22,
           }}

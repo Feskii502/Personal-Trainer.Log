@@ -20,7 +20,7 @@ export default function SessionTabBar({
     <div
       className="sticky top-0 z-40 border-b border-border flex items-stretch flex-shrink-0"
       style={{
-        background: 'rgba(10,10,11,0.85)',
+        background: 'var(--c-glass-top)',
         backdropFilter: 'blur(16px) saturate(180%)',
         WebkitBackdropFilter: 'blur(16px) saturate(180%)',
         height: 52,
@@ -102,7 +102,7 @@ export default function SessionTabBar({
                   width: 26,
                   height: 26,
                   background: '#1C1C1F',
-                  color: '#D4FF3A',
+                  color: 'var(--c-brand-lime)',
                   border: '1px solid #26262A',
                 }}
               >

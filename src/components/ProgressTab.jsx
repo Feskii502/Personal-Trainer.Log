@@ -13,7 +13,7 @@ import { addMetric, removeMetric, updateClient } from '../lib/store.js';
 import { calcBMI, cx, fmtDate } from '../lib/utils.js';
 
 const METRICS = [
-  { key: 'weight', label: 'Weight', suffix: 'kg', color: '#D4FF3A' },
+  { key: 'weight', label: 'Weight', suffix: 'kg', color: 'var(--c-brand-lime)' },
   { key: 'bmi', label: 'BMI', suffix: '', color: '#4A7DFF' },
   { key: 'bodyFatPct', label: 'Body Fat', suffix: '%', color: '#FF8A3A' },
 ];

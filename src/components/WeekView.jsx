@@ -178,7 +178,7 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
                 width: 48,
                 height: 48,
                 background: '#1C1C1F',
-                color: '#D4FF3A',
+                color: 'var(--c-brand-lime)',
                 border: '1px solid #26262A',
               }}
             >

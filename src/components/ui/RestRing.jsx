@@ -5,7 +5,7 @@ export default function RestRing({
   total,
   size = 140,
   stroke = 10,
-  color = '#D4FF3A',
+  color = 'var(--c-brand-lime)',
   label = 'REST',
 }) {
   const r = (size - stroke) / 2;

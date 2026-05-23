@@ -13,10 +13,14 @@ export default {
           DEFAULT: 'var(--c-border)',
         },
         brand: {
-          lime: '#D4FF3A',
-          red: '#FF4D3A',
+          lime: 'var(--c-brand-lime)',
+          red: 'var(--c-brand-red)',
         },
+        warning: 'var(--c-warning)',
         phase: {
+          // Endurance has separate light/dark hex (the brand-lime / red have CSS
+          // vars, but the dotted phase chips embed phaseHex into rgba/hex math
+          // throughout — easier to leave hex literal and accept a tiny shift).
           endurance: '#3ADBC7',
           hypertrophy: '#4A7DFF',
           strength: '#E94FA1',
