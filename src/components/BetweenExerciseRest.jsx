@@ -68,8 +68,8 @@ export default function BetweenExerciseRest({ dayId, defaultSeconds = 120 }) {
     <div
       className="rounded-full flex items-center gap-2 px-3 py-1.5 flex-wrap"
       style={{
-        background: 'rgba(20,20,22,0.4)',
-        border: '1px dashed #26262A',
+        background: 'var(--c-soft-bg-idle)',
+        border: '1px dashed var(--c-border)',
       }}
     >
       <Timer size={14} className="text-txt-muted" />

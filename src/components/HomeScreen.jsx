@@ -174,9 +174,9 @@ function Topbar({ now, onOpenSettings, userEmail, userName }) {
           style={{
             width: 40,
             height: 40,
-            background: '#1C1C1F',
-            border: '1px solid #26262A',
-            color: '#F5F5F7',
+            background: 'var(--c-avatar-bg)',
+            border: '1px solid var(--c-avatar-border)',
+            color: 'var(--c-txt-primary)',
           }}
           title={userName || userEmail || ''}
         >
@@ -288,9 +288,9 @@ function ClientRow({ client, onOpen }) {
         style={{
           width: 40,
           height: 40,
-          background: '#0F0F11',
-          color: '#F5F5F7',
-          border: '1px solid #26262A',
+          background: 'var(--c-input-bg)',
+          color: 'var(--c-txt-primary)',
+          border: '1px solid var(--c-avatar-border)',
         }}
       >
         {initialsOf(client.name) || '·'}
@@ -301,7 +301,7 @@ function ClientRow({ client, onOpen }) {
               width: 10,
               height: 10,
               background: phaseColor(phase),
-              border: '2px solid #141416',
+              border: '2px solid var(--c-bg-surface)',
             }}
           />
         )}
@@ -683,8 +683,8 @@ function TypeBadge({ type }) {
       style={{
         height: 40,
         minWidth: 40,
-        background: '#0F0F11',
-        border: '1px solid #26262A',
+        background: 'var(--c-input-bg)',
+        border: '1px solid var(--c-avatar-border)',
       }}
     >
       <span className="text-[10px] tabular font-semibold text-txt-secondary whitespace-nowrap leading-none">
@@ -765,7 +765,7 @@ function ExerciseLibrarySection({ library }) {
 
       <div
         className="border-t border-border grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
-        style={{ background: '#1C1C1F', gap: 1 }}
+        style={{ background: 'var(--c-divider-fill)', gap: 1 }}
       >
         {filtered.map((l) => (
           <div
@@ -884,7 +884,7 @@ function WorkoutPresetsSection() {
       ) : (
         <div
           className="border-t border-border grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
-          style={{ background: '#1C1C1F', gap: 1 }}
+          style={{ background: 'var(--c-divider-fill)', gap: 1 }}
         >
           {presets.map((p) => {
             const tot = presetTotals(p);

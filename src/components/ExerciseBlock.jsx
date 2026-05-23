@@ -474,7 +474,7 @@ export default function ExerciseBlock({
       </div>
 
       {/* Progress bar */}
-      <div className="h-0.5" style={{ background: '#1C1C1F' }}>
+      <div className="h-0.5" style={{ background: 'var(--c-avatar-bg)' }}>
         <div
           className="h-full transition-all"
           style={{

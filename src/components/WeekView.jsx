@@ -81,7 +81,7 @@ function DayCard({ day, onOpen, phaseHex }) {
         {hasContent && (
           <div
             className="h-1 rounded-full overflow-hidden"
-            style={{ background: '#1C1C1F' }}
+            style={{ background: 'var(--c-avatar-bg)' }}
           >
             <div
               className="h-full rounded-full transition-all"
@@ -177,9 +177,9 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
               style={{
                 width: 48,
                 height: 48,
-                background: '#1C1C1F',
+                background: 'var(--c-avatar-bg)',
                 color: 'var(--c-brand-lime)',
-                border: '1px solid #26262A',
+                border: '1px solid var(--c-avatar-border)',
               }}
             >
               {initialsOf(client.name) || '·'}
@@ -189,7 +189,7 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
                   width: 14,
                   height: 14,
                   background: phaseHex,
-                  border: '2px solid #141416',
+                  border: '2px solid var(--c-bg-surface)',
                 }}
               />
             </div>
@@ -254,7 +254,7 @@ export default function WeekView({ clientId, weekId, onBack, onOpenDay }) {
 
           <div
             className="h-1.5 rounded-full overflow-hidden mt-4"
-            style={{ background: '#1C1C1F' }}
+            style={{ background: 'var(--c-avatar-bg)' }}
           >
             <div
               className="h-full rounded-full transition-all"

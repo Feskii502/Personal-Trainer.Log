@@ -75,7 +75,7 @@ export default function AuthView() {
               height: 52,
               borderRadius: 14,
               background: '#0A0A0B',
-              border: '1px solid #26262A',
+              border: '1px solid var(--c-avatar-border)',
             }}
           >
             <Logo size={32} />

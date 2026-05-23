@@ -27,6 +27,15 @@
   --c-glass-border: rgba(255, 255, 255, 0.08);
   --c-glass-rest: rgba(20, 20, 22, 0.78);
   --c-glass-rest-border: rgba(212, 255, 58, 0.35);
+
+  /* Inline surfaces previously hardcoded as dark hex */
+  --c-avatar-bg: #1c1c1f; /* circle/badge backgrounds */
+  --c-avatar-border: #26262a;
+  --c-input-bg: #0f0f11; /* darker input fields inside set rows */
+  --c-divider-fill: #1c1c1f; /* the 1px grid gap fill between cards */
+  --c-tab-active-bg: rgba(20, 20, 22, 0.6); /* SessionTabBar active tab */
+  --c-soft-bg-idle: rgba(20, 20, 22, 0.4); /* between-exercise rest idle */
+  --c-progress-track: #1c1c1f; /* progress bar fill underneath */
 }
 
 :root[data-theme='light'] {
@@ -53,6 +62,15 @@
   --c-glass-border: rgba(14, 14, 16, 0.08);
   --c-glass-rest: rgba(255, 255, 255, 0.85);
   --c-glass-rest-border: rgba(14, 14, 16, 0.15);
+
+  /* Inline surfaces */
+  --c-avatar-bg: #eeeee8;
+  --c-avatar-border: #dedeD6;
+  --c-input-bg: #ffffff;
+  --c-divider-fill: #e3e3dc;
+  --c-tab-active-bg: rgba(14, 14, 16, 0.04);
+  --c-soft-bg-idle: rgba(255, 255, 255, 0.65);
+  --c-progress-track: #e3e3dc;
 }
 
 @layer base {

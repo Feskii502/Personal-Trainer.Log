@@ -119,9 +119,9 @@ function Hero({ client, week, day, onTitleChange }) {
             style={{
               width: 56,
               height: 56,
-              background: '#0F0F11',
-              color: '#F5F5F7',
-              border: '1px solid #26262A',
+              background: 'var(--c-input-bg)',
+              color: 'var(--c-txt-primary)',
+              border: '1px solid var(--c-avatar-border)',
               fontSize: 18,
             }}
           >

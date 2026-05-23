@@ -131,7 +131,7 @@ function NumberStepper({ value, onChange, min = 0, max = 20, step = 1, suffix })
   return (
     <div
       className="flex items-center rounded-btn border border-border overflow-hidden tabular"
-      style={{ background: '#0F0F11' }}
+      style={{ background: 'var(--c-input-bg)' }}
     >
       <button
         onClick={dec}
@@ -190,7 +190,7 @@ function SectionEditor({ sectionKey, label, Icon, rows, onChange, library }) {
           <div className="section-title">{label}</div>
           <span
             className="text-[10px] tabular px-1.5 rounded text-txt-secondary"
-            style={{ background: '#1C1C1F' }}
+            style={{ background: 'var(--c-avatar-bg)' }}
           >
             {rows.length} ex · {totalSets} sets
           </span>
@@ -227,7 +227,7 @@ function SectionEditor({ sectionKey, label, Icon, rows, onChange, library }) {
           <div key={r.rowId}>
             <div
               className="flex items-center gap-2 p-2 rounded-btn border border-border"
-              style={{ background: '#141416' }}
+              style={{ background: 'var(--c-bg-surface)' }}
             >
               <div className="w-6 text-[10px] tabular font-bold text-txt-muted text-center">
                 {i + 1}

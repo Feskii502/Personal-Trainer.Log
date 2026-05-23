@@ -34,8 +34,8 @@ export function TagList({ tags = [], size = 'sm' }) {
             fontSize: size === 'sm' ? 10 : 11,
             padding: '2px 10px',
             color: '#8A8A90',
-            background: '#1C1C1F',
-            border: '1px solid #26262A',
+            background: 'var(--c-avatar-bg)',
+            border: '1px solid var(--c-avatar-border)',
           }}
         >
           {t}

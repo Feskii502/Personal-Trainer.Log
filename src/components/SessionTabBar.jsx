@@ -49,8 +49,8 @@ export default function SessionTabBar({
               width: 32,
               height: 32,
               borderRadius: 8,
-              background: '#1C1C1F',
-              border: '1px solid #26262A',
+              background: 'var(--c-avatar-bg)',
+              border: '1px solid var(--c-avatar-border)',
             }}
           >
             <Logo size={20} />
@@ -90,7 +90,7 @@ export default function SessionTabBar({
               style={
                 active
                   ? {
-                      background: '#141416',
+                      background: 'var(--c-bg-surface)',
                       boxShadow: 'inset 0 -2px 0 #D4FF3A',
                     }
                   : {}
@@ -101,9 +101,9 @@ export default function SessionTabBar({
                 style={{
                   width: 26,
                   height: 26,
-                  background: '#1C1C1F',
+                  background: 'var(--c-avatar-bg)',
                   color: 'var(--c-brand-lime)',
-                  border: '1px solid #26262A',
+                  border: '1px solid var(--c-avatar-border)',
                 }}
               >
                 {initialsOf(c.name)}
@@ -113,7 +113,7 @@ export default function SessionTabBar({
                     width: 8,
                     height: 8,
                     background: phaseHex,
-                    border: '2px solid #0A0A0B',
+                    border: '2px solid var(--c-bg-base)',
                   }}
                 />
               </div>

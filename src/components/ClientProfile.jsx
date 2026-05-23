@@ -218,9 +218,9 @@ function HeaderCard({ client, stats, onDelete }) {
           style={{
             width: 64,
             height: 64,
-            background: '#1C1C1F',
+            background: 'var(--c-avatar-bg)',
             color: 'var(--c-brand-lime)',
-            border: '1px solid #26262A',
+            border: '1px solid var(--c-avatar-border)',
             fontSize: 22,
           }}
         >
@@ -232,7 +232,7 @@ function HeaderCard({ client, stats, onDelete }) {
                 width: 16,
                 height: 16,
                 background: phaseHex,
-                border: '2px solid #141416',
+                border: '2px solid var(--c-bg-surface)',
               }}
             />
           )}
@@ -319,7 +319,7 @@ function HeaderCard({ client, stats, onDelete }) {
           </div>
           <div
             className="h-1 rounded-full overflow-hidden mt-2"
-            style={{ background: '#1C1C1F' }}
+            style={{ background: 'var(--c-avatar-bg)' }}
           >
             <div
               className="h-full rounded-full"
@@ -519,7 +519,7 @@ function WeekCard({ week, onOpen }) {
         </div>
         <div
           className="h-1.5 rounded-full overflow-hidden"
-          style={{ background: '#1C1C1F' }}
+          style={{ background: 'var(--c-avatar-bg)' }}
         >
           <div
             className="h-full rounded-full transition-all"

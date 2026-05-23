@@ -108,10 +108,10 @@ function Chart({ data, dataKey, color, suffix }) {
         />
         <Tooltip
           contentStyle={{
-            background: '#1C1C1F',
-            border: '1px solid #26262A',
+            background: 'var(--c-avatar-bg)',
+            border: '1px solid var(--c-avatar-border)',
             borderRadius: 10,
-            color: '#F5F5F7',
+            color: 'var(--c-txt-primary)',
             fontSize: 12,
           }}
           labelStyle={{ color: '#8A8A90' }}

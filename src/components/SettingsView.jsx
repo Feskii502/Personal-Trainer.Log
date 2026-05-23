@@ -129,9 +129,9 @@ function AccountTab() {
           style={{
             width: 64,
             height: 64,
-            background: '#1C1C1F',
+            background: 'var(--c-avatar-bg)',
             color: 'var(--c-brand-lime)',
-            border: '1px solid #26262A',
+            border: '1px solid var(--c-avatar-border)',
           }}
         >
           {initialsOf(name || email) || '·'}
@@ -390,9 +390,9 @@ function ExportTab() {
                     style={{
                       width: 38,
                       height: 38,
-                      background: '#1C1C1F',
+                      background: 'var(--c-avatar-bg)',
                       color: 'var(--c-brand-lime)',
-                      border: '1px solid #26262A',
+                      border: '1px solid var(--c-avatar-border)',
                     }}
                   >
                     {initialsOf(c.name) || '·'}
@@ -403,7 +403,7 @@ function ExportTab() {
                           width: 11,
                           height: 11,
                           background: phaseHex,
-                          border: '2px solid #141416',
+                          border: '2px solid var(--c-bg-surface)',
                         }}
                       />
                     )}

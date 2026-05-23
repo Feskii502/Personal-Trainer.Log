@@ -110,9 +110,9 @@ export default function ScheduleSessionModal({
                     style={{
                       width: 32,
                       height: 32,
-                      background: '#1C1C1F',
+                      background: 'var(--c-avatar-bg)',
                       color: 'var(--c-brand-lime)',
-                      border: '1px solid #26262A',
+                      border: '1px solid var(--c-avatar-border)',
                     }}
                   >
                     {initialsOf(c.name) || '·'}

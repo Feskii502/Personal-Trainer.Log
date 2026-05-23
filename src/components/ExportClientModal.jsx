@@ -134,9 +134,9 @@ export default function ExportClientModal({ open, onClose, client }) {
             style={{
               width: 44,
               height: 44,
-              background: '#1C1C1F',
+              background: 'var(--c-avatar-bg)',
               color: 'var(--c-brand-lime)',
-              border: '1px solid #26262A',
+              border: '1px solid var(--c-avatar-border)',
             }}
           >
             {initialsOf(client.name) || '·'}
@@ -147,7 +147,7 @@ export default function ExportClientModal({ open, onClose, client }) {
                   width: 12,
                   height: 12,
                   background: phaseHex,
-                  border: '2px solid #141416',
+                  border: '2px solid var(--c-bg-surface)',
                 }}
               />
             )}
@@ -230,9 +230,9 @@ export default function ExportClientModal({ open, onClose, client }) {
                       style={{
                         width: 36,
                         height: 36,
-                        background: '#1C1C1F',
-                        color: '#F5F5F7',
-                        border: '1px solid #26262A',
+                        background: 'var(--c-avatar-bg)',
+                        color: 'var(--c-txt-primary)',
+                        border: '1px solid var(--c-avatar-border)',
                       }}
                     >
                       {w.number}

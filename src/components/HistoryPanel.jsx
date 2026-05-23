@@ -130,10 +130,10 @@ export default function HistoryPanel({ client, exercise }) {
             />
             <Tooltip
               contentStyle={{
-                background: '#1C1C1F',
-                border: '1px solid #26262A',
+                background: 'var(--c-avatar-bg)',
+                border: '1px solid var(--c-avatar-border)',
                 borderRadius: 10,
-                color: '#F5F5F7',
+                color: 'var(--c-txt-primary)',
                 fontSize: 12,
               }}
               labelStyle={{ color: '#8A8A90' }}
@@ -181,9 +181,9 @@ export default function HistoryPanel({ client, exercise }) {
                     key={j}
                     className="text-xs tabular px-2 py-0.5 rounded"
                     style={{
-                      background: '#1C1C1F',
-                      border: '1px solid #26262A',
-                      color: '#F5F5F7',
+                      background: 'var(--c-avatar-bg)',
+                      border: '1px solid var(--c-avatar-border)',
+                      color: 'var(--c-txt-primary)',
                     }}
                   >
                     {weighted && x.weight != null ? `${x.weight}kg ` : ''}
