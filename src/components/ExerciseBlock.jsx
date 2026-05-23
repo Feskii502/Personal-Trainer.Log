@@ -54,7 +54,7 @@ function NumInput({ value, onChange, placeholder, suffix, ariaLabel }) {
         pattern="[0-9]*\.?[0-9]*"
         autoComplete="off"
         aria-label={ariaLabel}
-        className="w-full bg-bg-base border border-border rounded-btn h-11 px-3 pr-7 text-[14px] tabular font-semibold outline-none focus:border-brand-lime text-txt-primary placeholder:text-txt-muted/60"
+        className="w-full bg-bg-base border border-border rounded-btn h-10 px-2 pr-6 text-[13px] tabular font-semibold outline-none focus:border-brand-lime text-txt-primary placeholder:text-txt-muted/60 text-center"
         value={value ?? ''}
         placeholder={placeholder}
         onChange={(e) => {
@@ -66,7 +66,7 @@ function NumInput({ value, onChange, placeholder, suffix, ariaLabel }) {
         }}
       />
       {suffix && (
-        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-txt-muted tabular pointer-events-none">
+        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-txt-muted tabular pointer-events-none">
           {suffix}
         </span>
       )}
@@ -140,18 +140,25 @@ function SetRow({
   const remove = () =>
     removeSet(clientId, weekId, dayId, section, exercise.id, set.id);
 
-  const setIdxBlock = (
-    <div className="flex flex-col items-start gap-0.5 min-w-[68px]">
-      <div className="font-display tabular font-bold text-[15px] leading-none text-txt-secondary">
-        #{set.setNumber}
+  const setIdxCell = (
+    <div className="font-display tabular font-bold text-[15px] leading-none text-txt-secondary text-center">
+      #{set.setNumber}
+    </div>
+  );
+
+  const prevCell = (
+    <div className="flex flex-col items-start">
+      <div className="text-[8px] uppercase tracking-wider text-txt-muted leading-none mb-0.5">
+        Prev
       </div>
-      {prevText ? (
-        <div className="text-[9px] tabular text-txt-muted leading-none uppercase tracking-[0.06em] whitespace-nowrap">
-          prev {prevText}
-        </div>
-      ) : (
-        <div className="text-[9px] text-txt-muted leading-none">—</div>
-      )}
+      <div
+        className={cx(
+          'text-[11px] tabular leading-none whitespace-nowrap',
+          prevText ? 'text-txt-secondary' : 'text-txt-muted'
+        )}
+      >
+        {prevText || '—'}
+      </div>
     </div>
   );
 
@@ -226,6 +233,29 @@ function SetRow({
     </button>
   );
 
+  const dropBtn = (
+    <button
+      onClick={() =>
+        addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
+      }
+      className="w-9 h-9 inline-flex items-center justify-center rounded-full border border-border text-txt-secondary hover:text-brand-lime hover:border-brand-lime"
+      aria-label="Add drop set"
+      title="Add drop set"
+    >
+      <ChevronDown size={14} />
+    </button>
+  );
+
+  const deleteBtn = (
+    <button
+      onClick={remove}
+      className="w-9 h-9 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
+      aria-label="Remove set"
+    >
+      <X size={14} />
+    </button>
+  );
+
   return (
     <div
       className={cx('rounded-btn transition-colors px-2 py-2')}
@@ -233,74 +263,46 @@ function SetRow({
         background: running ? 'rgba(212,255,58,0.05)' : 'transparent',
       }}
     >
-      {/* Phone: stacked */}
-      <div className="sm:hidden space-y-2">
+      {/* Phone: two rows. Row 1: #, prev, weight, reps. Row 2: drop, timer, check, X. */}
+      <div className="sm:hidden space-y-3">
         <div
-          className="grid items-center gap-2"
-          style={{ gridTemplateColumns: '68px 1fr 1fr' }}
+          className="grid items-center gap-3"
+          style={{ gridTemplateColumns: '32px 1fr 1fr 1fr' }}
         >
-          {setIdxBlock}
+          {setIdxCell}
+          {prevCell}
           {weightInput}
           {repsInput}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {dropBtn}
           <div className="flex-1">{timerBtn}</div>
           {checkBtn}
-          <button
-            onClick={() =>
-              addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
-            }
-            className="w-9 h-9 inline-flex items-center justify-center rounded-full border border-border text-txt-secondary hover:text-brand-lime hover:border-brand-lime"
-            aria-label="Add drop set"
-            title="Add drop set"
-          >
-            <ChevronDown size={14} />
-          </button>
-          <button
-            onClick={remove}
-            className="w-9 h-9 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
-            aria-label="Remove set"
-          >
-            <X size={14} />
-          </button>
+          {deleteBtn}
         </div>
       </div>
 
-      {/* Desktop: grid */}
+      {/* Desktop: one row. # | prev | weight | reps | drop | timer | check | X */}
       <div
-        className="hidden sm:grid items-center gap-2"
+        className="hidden sm:grid items-center gap-3"
         style={{
           gridTemplateColumns:
-            '76px minmax(90px,1fr) minmax(90px,1fr) auto auto auto auto',
+            '36px 96px minmax(80px,110px) minmax(80px,110px) auto auto auto auto',
         }}
       >
-        {setIdxBlock}
+        {setIdxCell}
+        {prevCell}
         {weightInput}
         {repsInput}
+        {dropBtn}
         {timerBtn}
         {checkBtn}
-        <button
-          onClick={() =>
-            addDropSet(clientId, weekId, dayId, section, exercise.id, set.id)
-          }
-          className="w-9 h-9 inline-flex items-center justify-center rounded-full border border-border text-txt-secondary hover:text-brand-lime hover:border-brand-lime"
-          aria-label="Add drop set"
-          title="Add drop set"
-        >
-          <ChevronDown size={14} />
-        </button>
-        <button
-          onClick={remove}
-          className="w-9 h-9 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red"
-          aria-label="Remove set"
-        >
-          <X size={14} />
-        </button>
+        {deleteBtn}
       </div>
 
       {/* Drop sets */}
       {set.dropSets?.length > 0 && (
-        <div className="mt-2 pl-[76px] space-y-1.5">
+        <div className="mt-2 sm:pl-[140px] space-y-1.5">
           {set.dropSets.map((ds) => (
             <div
               key={ds.id}

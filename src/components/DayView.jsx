@@ -198,20 +198,39 @@ function Hero({ client, week, day, onTitleChange }) {
           <SectionLabel className="flex items-center gap-1.5">
             <PencilLine size={11} /> Day title
           </SectionLabel>
-          <input
-            type="text"
-            value={day.title || ''}
-            onChange={(e) =>
-              onTitleChange(e.target.value)
-            }
-            placeholder="Push Day · Upper Body Strength"
-            className="w-full bg-transparent border-0 outline-none font-display font-semibold tracking-tight placeholder:text-txt-muted/50 text-txt-primary"
-            style={{
-              fontSize: 'clamp(26px, 3.5vw, 38px)',
-              lineHeight: 1.05,
-              letterSpacing: '-0.02em',
-            }}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={day.title || ''}
+              onChange={(e) => onTitleChange(e.target.value)}
+              aria-label="Day title"
+              className={cx(
+                'w-full bg-transparent outline-none font-display font-semibold tracking-tight text-txt-primary py-1 transition-colors',
+                'border-b',
+                day.title
+                  ? 'border-transparent focus:border-brand-lime/60'
+                  : 'border-dashed border-txt-muted/40 focus:border-brand-lime focus:border-solid'
+              )}
+              style={{
+                fontSize: 'clamp(26px, 3.5vw, 38px)',
+                lineHeight: 1.05,
+                letterSpacing: '-0.02em',
+              }}
+            />
+            {!day.title && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute left-0 top-1 text-txt-muted/30 italic"
+                style={{
+                  fontSize: 'clamp(26px, 3.5vw, 38px)',
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {''}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -238,10 +257,7 @@ function StickyRest() {
       : 'until next set';
 
   return (
-    <div
-      className="sticky z-30 -mx-1 px-1 pt-2 pb-2"
-      style={{ top: 52 }}
-    >
+    <div className="-mx-1 px-1 pb-2">
       <div
         className="rounded-full flex items-center gap-3 p-1.5 pr-2"
         style={{
@@ -351,7 +367,7 @@ function SectionPills({ day, active, onPick }) {
 }
 
 // ---------- Stats strip ----------
-function StatsStrip({ day }) {
+function StatsStrip({ day, onComplete, completeDisabled, completed }) {
   const stats = useMemo(() => {
     let sets = 0;
     let completed = 0;
@@ -411,7 +427,7 @@ function StatsStrip({ day }) {
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 min-w-[260px]">
+      <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 min-w-[200px]">
         {[
           {
             label: 'Sets',
@@ -434,37 +450,22 @@ function StatsStrip({ day }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
 
-// ---------- Complete session — button only ----------
-function CompleteCard({ day, clientId, weekId, dayId }) {
-  const totalEx =
-    day.sections.warmUp.length +
-    day.sections.resistance.length +
-    day.sections.coolDown.length;
-  if (totalEx === 0) return null;
-  const done = day.completed;
-  return (
-    <div className="flex justify-end">
+      {/* Complete session — pinned on the top-right of the strip */}
       <button
-        onClick={() => {
-          if (done) return;
-          if (confirm('Mark this session complete?')) {
-            completeSession(clientId, weekId, dayId);
-          }
-        }}
-        disabled={done}
+        onClick={onComplete}
+        disabled={completeDisabled}
         className={cx(
-          'h-11 px-5 rounded-full text-[12px] font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors flex-shrink-0',
-          done
+          'h-10 px-4 rounded-full text-[11px] font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors flex-shrink-0 ml-auto',
+          completed
             ? 'bg-bg-elevated text-txt-secondary cursor-default border border-border'
+            : completeDisabled
+            ? 'bg-bg-elevated/40 text-txt-muted cursor-not-allowed border border-border'
             : 'bg-brand-lime text-black hover:opacity-90'
         )}
       >
-        <CheckCircle2 size={14} />
-        {done ? 'Session complete' : 'Complete session'}
+        <CheckCircle2 size={13} />
+        {completed ? 'Completed' : 'Complete'}
       </button>
     </div>
   );
@@ -604,11 +605,38 @@ export default function DayView({
             updateDay(clientId, weekId, dayId, { title })
           }
         />
-        <StickyRest />
 
         <div className="space-y-4 mt-3">
           <SectionPills day={day} active={section} onPick={setSection} />
-          <StatsStrip day={day} />
+
+          {/* Sticky top region: rest pill + stats strip with Complete on the right */}
+          <div
+            className="sticky z-20 -mx-2 sm:-mx-5 px-2 sm:px-5 pt-2 pb-3"
+            style={{
+              top: 52,
+              background:
+                'linear-gradient(to bottom, var(--c-bg-base) 0%, var(--c-bg-base) 80%, transparent 100%)',
+            }}
+          >
+            <StickyRest />
+            <StatsStrip
+              day={day}
+              completed={day.completed}
+              completeDisabled={
+                day.completed ||
+                day.sections.warmUp.length +
+                  day.sections.resistance.length +
+                  day.sections.coolDown.length ===
+                  0
+              }
+              onComplete={() => {
+                if (day.completed) return;
+                if (confirm('Mark this session complete?')) {
+                  completeSession(clientId, weekId, dayId);
+                }
+              }}
+            />
+          </div>
 
           <div className="flex items-baseline justify-between pt-2">
             <h2 className="font-display font-semibold text-[20px] tracking-tight">
@@ -659,12 +687,6 @@ export default function DayView({
             </div>
           )}
 
-          <CompleteCard
-            day={day}
-            clientId={clientId}
-            weekId={weekId}
-            dayId={dayId}
-          />
         </div>
       </div>
 
