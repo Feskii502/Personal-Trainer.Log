@@ -256,9 +256,168 @@ function SetRow({
     </button>
   );
 
+  // Drop set row — same columns as parent, inset darker bg, "Dropset #N"
+  // sitting in the prev slot. Weight/reps line up exactly with the parent.
+  const DropSetRow = ({ ds, index }) => (
+    <div
+      className="flex items-center gap-2.5 px-2 py-2 mt-1.5 rounded-btn"
+      style={{ background: 'var(--c-inset-bg)' }}
+    >
+      <div className="w-8 text-center flex-shrink-0 text-txt-muted text-[13px] leading-none">
+        ↳
+      </div>
+      <div className="w-[88px] flex-shrink-0">
+        <div className="text-[8px] uppercase tracking-wider text-txt-muted leading-none mb-0.5">
+          Dropset
+        </div>
+        <div className="text-[11px] tabular font-bold text-txt-secondary leading-none">
+          #{index + 1}
+        </div>
+      </div>
+      <div className="w-[96px] flex-shrink-0">
+        {weighted ? (
+          <NumInput
+            value={ds.weight}
+            placeholder="kg"
+            suffix="kg"
+            onChange={(v) =>
+              updateDropSet(
+                clientId,
+                weekId,
+                dayId,
+                section,
+                exercise.id,
+                set.id,
+                ds.id,
+                { weight: v }
+              )
+            }
+          />
+        ) : null}
+      </div>
+      <div className="w-[96px] flex-shrink-0">
+        <NumInput
+          value={ds.reps}
+          placeholder="reps"
+          onChange={(v) =>
+            updateDropSet(
+              clientId,
+              weekId,
+              dayId,
+              section,
+              exercise.id,
+              set.id,
+              ds.id,
+              { reps: v }
+            )
+          }
+        />
+      </div>
+      {/* spacers for drop / timer / check positions so the X lines up */}
+      <div className="w-9 flex-shrink-0" />
+      <div className="flex-shrink-0" style={{ width: 110 }} />
+      <div className="w-9 flex-shrink-0" />
+      <button
+        onClick={() =>
+          removeDropSet(
+            clientId,
+            weekId,
+            dayId,
+            section,
+            exercise.id,
+            set.id,
+            ds.id
+          )
+        }
+        className="w-9 h-9 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red flex-shrink-0"
+        aria-label="Remove drop set"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+
+  // Compact phone-only drop row.
+  const PhoneDropSetRow = ({ ds, index }) => (
+    <div
+      className="flex items-center gap-2 px-2 py-2 mt-1.5 rounded-btn"
+      style={{ background: 'var(--c-inset-bg)' }}
+    >
+      <div className="w-8 text-center flex-shrink-0 text-txt-muted text-[12px] leading-none">
+        ↳
+      </div>
+      <div className="w-[68px] flex-shrink-0">
+        <div className="text-[8px] uppercase tracking-wider text-txt-muted leading-none mb-0.5">
+          Dropset
+        </div>
+        <div className="text-[11px] tabular font-bold text-txt-secondary leading-none">
+          #{index + 1}
+        </div>
+      </div>
+      {weighted ? (
+        <div className="flex-1">
+          <NumInput
+            value={ds.weight}
+            placeholder="kg"
+            suffix="kg"
+            onChange={(v) =>
+              updateDropSet(
+                clientId,
+                weekId,
+                dayId,
+                section,
+                exercise.id,
+                set.id,
+                ds.id,
+                { weight: v }
+              )
+            }
+          />
+        </div>
+      ) : null}
+      <div className="flex-1">
+        <NumInput
+          value={ds.reps}
+          placeholder="reps"
+          onChange={(v) =>
+            updateDropSet(
+              clientId,
+              weekId,
+              dayId,
+              section,
+              exercise.id,
+              set.id,
+              ds.id,
+              { reps: v }
+            )
+          }
+        />
+      </div>
+      <button
+        onClick={() =>
+          removeDropSet(
+            clientId,
+            weekId,
+            dayId,
+            section,
+            exercise.id,
+            set.id,
+            ds.id
+          )
+        }
+        className="w-9 h-9 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red flex-shrink-0"
+        aria-label="Remove drop set"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+
   return (
     <div
-      className={cx('rounded-btn transition-colors px-2 py-2')}
+      className={cx(
+        'rounded-btn transition-colors px-2 py-2 border-b border-border last:border-b-0'
+      )}
       style={{
         background: running ? 'rgba(212,255,58,0.05)' : 'transparent',
       }}
@@ -271,16 +430,19 @@ function SetRow({
           <div className="flex-1">{weightInput}</div>
           <div className="flex-1">{repsInput}</div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex-shrink-0">{dropBtn}</div>
           <div className="flex-1">{timerBtn}</div>
           <div className="flex-shrink-0">{checkBtn}</div>
-          <div className="ml-auto flex-shrink-0">{deleteBtn}</div>
+          <div className="flex-shrink-0">{deleteBtn}</div>
         </div>
+        {set.dropSets?.map((ds, di) => (
+          <PhoneDropSetRow key={ds.id} ds={ds} index={di} />
+        ))}
       </div>
 
-      {/* Desktop: tight flex row. # | prev | weight | reps | drop | timer | check | (spacer) | X */}
-      <div className="hidden sm:flex items-center gap-3">
+      {/* Desktop: tight flex row, no ml-auto — X sits right after check. */}
+      <div className="hidden sm:flex items-center gap-2.5">
         <div className="w-8 text-center flex-shrink-0">{setIdxCell}</div>
         <div className="w-[88px] flex-shrink-0">{prevCell}</div>
         <div className="w-[96px] flex-shrink-0">{weightInput}</div>
@@ -288,77 +450,15 @@ function SetRow({
         <div className="flex-shrink-0">{dropBtn}</div>
         <div className="flex-shrink-0">{timerBtn}</div>
         <div className="flex-shrink-0">{checkBtn}</div>
-        <div className="ml-auto flex-shrink-0">{deleteBtn}</div>
+        <div className="flex-shrink-0">{deleteBtn}</div>
       </div>
 
-      {/* Drop sets — align under the weight column of the main row */}
-      {set.dropSets?.length > 0 && (
-        <div className="mt-2 sm:pl-[132px] space-y-1.5">
-          {set.dropSets.map((ds) => (
-            <div key={ds.id} className="flex items-center gap-3">
-              <span className="text-[9px] uppercase tracking-wider font-semibold text-txt-muted w-10 flex-shrink-0">
-                Drop
-              </span>
-              {weighted ? (
-                <div className="w-[96px] flex-shrink-0">
-                  <NumInput
-                    value={ds.weight}
-                    placeholder="kg"
-                    suffix="kg"
-                    onChange={(v) =>
-                      updateDropSet(
-                        clientId,
-                        weekId,
-                        dayId,
-                        section,
-                        exercise.id,
-                        set.id,
-                        ds.id,
-                        { weight: v }
-                      )
-                    }
-                  />
-                </div>
-              ) : null}
-              <div className="w-[96px] flex-shrink-0">
-                <NumInput
-                  value={ds.reps}
-                  placeholder="reps"
-                  onChange={(v) =>
-                    updateDropSet(
-                      clientId,
-                      weekId,
-                      dayId,
-                      section,
-                      exercise.id,
-                      set.id,
-                      ds.id,
-                      { reps: v }
-                    )
-                  }
-                />
-              </div>
-              <button
-                className="ml-auto w-8 h-8 inline-flex items-center justify-center rounded-full text-txt-muted hover:text-brand-red flex-shrink-0"
-                onClick={() =>
-                  removeDropSet(
-                    clientId,
-                    weekId,
-                    dayId,
-                    section,
-                    exercise.id,
-                    set.id,
-                    ds.id
-                  )
-                }
-                aria-label="Remove drop set"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Desktop drop sets — full-width inset row, columns aligned with parent */}
+      <div className="hidden sm:block">
+        {set.dropSets?.map((ds, di) => (
+          <DropSetRow key={ds.id} ds={ds} index={di} />
+        ))}
+      </div>
     </div>
   );
 }
