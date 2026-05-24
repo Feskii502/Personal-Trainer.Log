@@ -203,7 +203,7 @@ function SetRow({
   ) : (
     <button
       onClick={start}
-      className="h-11 px-3 rounded-btn flex items-center justify-center gap-2 font-display font-semibold tabular text-[13px] border border-brand-lime/60 text-brand-lime bg-transparent hover:bg-brand-lime/[0.06] w-full sm:w-auto"
+      className="h-11 px-3 rounded-btn flex items-center justify-center gap-2 font-display font-bold tabular text-[13px] bg-brand-lime text-black hover:opacity-90 w-full sm:w-auto"
       style={{ minWidth: 110 }}
     >
       <Play size={11} fill="currentColor" />
@@ -257,16 +257,20 @@ function SetRow({
   );
 
   // Drop set row — same columns as parent, inset darker bg, "Dropset #N"
-  // sitting in the prev slot. Weight/reps line up exactly with the parent.
-  const DropSetRow = ({ ds, index }) => (
+  // sitting in the prev slot. Weight/reps grow via flex-1 to mirror parent.
+  const DropSetRow = ({ ds, index, isLast }) => (
     <div
-      className="flex items-center gap-2.5 px-2 py-2 mt-1.5 rounded-btn"
+      className={cx(
+        'flex items-center gap-3 px-2 py-2 rounded-btn',
+        // Thin divider between drop sets — half-opacity vs main-set border
+        !isLast && 'border-b border-border/40'
+      )}
       style={{ background: 'var(--c-inset-bg)' }}
     >
       <div className="w-8 text-center flex-shrink-0 text-txt-muted text-[13px] leading-none">
         ↳
       </div>
-      <div className="w-[88px] flex-shrink-0">
+      <div className="w-[80px] flex-shrink-0">
         <div className="text-[8px] uppercase tracking-wider text-txt-muted leading-none mb-0.5">
           Dropset
         </div>
@@ -274,7 +278,7 @@ function SetRow({
           #{index + 1}
         </div>
       </div>
-      <div className="w-[96px] flex-shrink-0">
+      <div className="flex-1 min-w-[80px]">
         {weighted ? (
           <NumInput
             value={ds.weight}
@@ -295,7 +299,7 @@ function SetRow({
           />
         ) : null}
       </div>
-      <div className="w-[96px] flex-shrink-0">
+      <div className="flex-1 min-w-[80px]">
         <NumInput
           value={ds.reps}
           placeholder="reps"
@@ -441,24 +445,36 @@ function SetRow({
         ))}
       </div>
 
-      {/* Desktop: tight flex row, no ml-auto — X sits right after check. */}
-      <div className="hidden sm:flex items-center gap-2.5">
+      {/* Desktop: row fills full card width — weight/reps grow via flex-1,
+          X sits naturally at the right edge with proper spacing. */}
+      <div className="hidden sm:flex items-center gap-3">
         <div className="w-8 text-center flex-shrink-0">{setIdxCell}</div>
-        <div className="w-[88px] flex-shrink-0">{prevCell}</div>
-        <div className="w-[96px] flex-shrink-0">{weightInput}</div>
-        <div className="w-[96px] flex-shrink-0">{repsInput}</div>
+        <div className="w-[80px] flex-shrink-0">{prevCell}</div>
+        <div className="flex-1 min-w-[80px]">{weightInput}</div>
+        <div className="flex-1 min-w-[80px]">{repsInput}</div>
         <div className="flex-shrink-0">{dropBtn}</div>
         <div className="flex-shrink-0">{timerBtn}</div>
         <div className="flex-shrink-0">{checkBtn}</div>
         <div className="flex-shrink-0">{deleteBtn}</div>
       </div>
 
-      {/* Desktop drop sets — full-width inset row, columns aligned with parent */}
-      <div className="hidden sm:block">
-        {set.dropSets?.map((ds, di) => (
-          <DropSetRow key={ds.id} ds={ds} index={di} />
-        ))}
-      </div>
+      {/* Desktop drop sets — full-width inset rows wrapped in a block with
+          its own bordered group so drops appear visually nested under parent */}
+      {set.dropSets?.length > 0 && (
+        <div
+          className="hidden sm:block mt-2 rounded-btn overflow-hidden border border-border/40"
+          style={{ background: 'var(--c-inset-bg)' }}
+        >
+          {set.dropSets.map((ds, di) => (
+            <DropSetRow
+              key={ds.id}
+              ds={ds}
+              index={di}
+              isLast={di === set.dropSets.length - 1}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
